@@ -10,11 +10,11 @@ namespace {
 
 // Hand-crafted assets as required by the member contract (no dependency on
 // Member 1 discovery).
-CryptoAsset asset(const std::string& algorithm, long long key_bits = 0,
+CryptoAsset asset(const std::string& algorithm, long long key_size = 0,
                   const std::string& curve = "") {
     CryptoAsset a;
     a.algorithm = algorithm;
-    a.key_bits = key_bits;
+    a.key_size = key_size;
     a.curve = curve;
     return a;
 }
@@ -138,7 +138,7 @@ TEST(Classifier, CurveOverrideRespectsUnknownCurve) {
 
 TEST(Classifier, KeyBitsZeroIsNotDowngraded) {
     auto db = default_db();
-    // key_bits == 0 means "unknown"; it must not trigger a min-key downgrade.
+    // key_size == 0 means "unknown"; it must not trigger a min-key downgrade.
     const auto result = classify_asset(asset("RSA", 0), db);
     EXPECT_EQ(result.risk_score, 5.0);
 }

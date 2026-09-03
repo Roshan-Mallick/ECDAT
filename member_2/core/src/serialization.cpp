@@ -35,7 +35,7 @@ nlohmann::json to_json(const CryptoAsset& asset) {
         {"file", asset.file},
         {"line", asset.line},
         {"algorithm", asset.algorithm},
-        {"key_bits", asset.key_bits},
+        {"key_size", asset.key_size},
         {"curve", asset.curve},
         {"context", asset.context},
         {"status", status_to_string(asset.status)},
@@ -127,7 +127,7 @@ std::optional<CryptoAsset> from_json(const nlohmann::json& json) {
     if (!read_string(json, "source_type", asset.source_type) ||
         !read_string(json, "file", asset.file) ||
         !read_int(json, "line", asset.line) ||
-        !read_int(json, "key_bits", asset.key_bits) ||
+        !read_int(json, "key_size", asset.key_size) ||
         !read_string(json, "curve", asset.curve) ||
         !read_string(json, "context", asset.context) ||
         !read_number(json, "risk_score", asset.risk_score) ||

@@ -39,7 +39,7 @@ struct CryptoAsset {
     std::string file;
     std::int64_t line = 0;
     std::string algorithm;
-    std::int64_t key_bits = 0;
+    std::int64_t key_size = 0;
     std::string curve;
 
     // Free-form context describing how the asset is used.

@@ -21,7 +21,7 @@ CryptoAsset make(const std::string& algo, long long bits = 0,
                   const std::string& curve = "") {
     CryptoAsset a;
     a.algorithm = algo;
-    a.key_bits  = bits;
+    a.key_size  = bits;
     a.curve     = curve;
     return a;
 }

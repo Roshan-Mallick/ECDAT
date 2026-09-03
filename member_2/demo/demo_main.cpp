@@ -50,7 +50,7 @@ std::vector<ecdat::CryptoAsset> make_demo_assets() {
         a.file        = "demo/demo_main.cpp";
         a.line        = 42;
         a.algorithm   = "AES-256";
-        a.key_bits    = 256;
+        a.key_size    = 256;
         a.context     = "symmetric encryption at rest";
         assets.push_back(std::move(a));
     }
@@ -60,7 +60,7 @@ std::vector<ecdat::CryptoAsset> make_demo_assets() {
         a.file        = "config/keys.cfg";
         a.line        = 7;
         a.algorithm   = "RSA";
-        a.key_bits    = 1024;
+        a.key_size    = 1024;
         a.context     = "TLS server certificate (weak key)";
         assets.push_back(std::move(a));
     }
@@ -70,7 +70,7 @@ std::vector<ecdat::CryptoAsset> make_demo_assets() {
         a.file        = "src/sign.rs";
         a.line        = 118;
         a.algorithm   = "ECDSA";
-        a.key_bits    = 256;
+        a.key_size    = 256;
         a.curve       = "P-192";
         a.context     = "code-signing (weak curve)";
         assets.push_back(std::move(a));
@@ -81,7 +81,7 @@ std::vector<ecdat::CryptoAsset> make_demo_assets() {
         a.file        = "vendor/legacy.dll";
         a.line        = 200;
         a.algorithm   = "BLOWFISH";
-        a.key_bits    = 128;
+        a.key_size    = 128;
         a.context     = "legacy cipher not in taxonomy";
         assets.push_back(std::move(a));
     }
@@ -149,7 +149,7 @@ int main() {
         summary += "asset_" + std::to_string(i + 1) + ".json : "
                  + asset.algorithm;
         if (!asset.curve.empty()) summary += "/" + asset.curve;
-        if (asset.key_bits > 0)   summary += " " + std::to_string(asset.key_bits) + "b";
+        if (asset.key_size > 0)   summary += " " + std::to_string(asset.key_size) + "b";
         summary += " -> " + std::string(ecdat::status_to_string(result.status))
                  + "  risk=" + std::to_string(result.risk_score)
                  + "  pqc=" + (result.pqc_flag ? "true" : "false")
