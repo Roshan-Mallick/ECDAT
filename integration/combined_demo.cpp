@@ -35,7 +35,7 @@ bool write_file(const std::string& path, const std::string& content) {
 
 struct DemoAsset {
     std::string algorithm;
-    long long   key_bits = 0;
+    long long   key_size = 0;
     std::string curve;
     std::string file;
     long long   line = 0;
@@ -87,7 +87,7 @@ int main() {
         // Build CryptoAsset from demo data
         ecdat::CryptoAsset ca;
         ca.algorithm   = da.algorithm;
-        ca.key_bits    = da.key_bits;
+        ca.key_size    = da.key_size;
         ca.curve       = da.curve;
         ca.file        = da.file;
         ca.line        = da.line;
@@ -106,7 +106,7 @@ int main() {
         // Console output
         std::cout << "  Asset " << (i+1) << ": " << da.algorithm;
         if (!da.curve.empty()) std::cout << "/" << da.curve;
-        std::cout << "  " << da.key_bits << "b\n"
+        std::cout << "  " << da.key_size << "b\n"
                   << "    Status:     " << ecdat::status_to_string(r.status) << "\n"
                   << "    Risk(0-10): " << r.risk_score << "\n"
                   << "    Weakness:   " << r.weakness << " (scaled)\n"

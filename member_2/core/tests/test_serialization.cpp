@@ -15,7 +15,7 @@ CryptoAsset make_asset() {
     a.file = "main.cpp";
     a.line = 42;
     a.algorithm = "RSA";
-    a.key_bits = 1024;
+    a.key_size = 1024;
     a.curve = "P-256";
     a.context = "tls handshake";
     a.status = Status::Weak;
@@ -39,7 +39,7 @@ TEST(Serialization, ToJsonRoundTrip) {
     EXPECT_EQ(parsed->file, asset.file);
     EXPECT_EQ(parsed->line, asset.line);
     EXPECT_EQ(parsed->algorithm, asset.algorithm);
-    EXPECT_EQ(parsed->key_bits, asset.key_bits);
+    EXPECT_EQ(parsed->key_size, asset.key_size);
     EXPECT_EQ(parsed->curve, asset.curve);
     EXPECT_EQ(parsed->context, asset.context);
     EXPECT_EQ(parsed->status, asset.status);
@@ -76,7 +76,7 @@ TEST(Serialization, StatusToStringAndFromString) {
 TEST(Serialization, ParseAssetValidJson) {
     const auto asset = parse_asset(
         R"({"source_type":"s","file":"f.c","line":7,"algorithm":"AES-256",
-            "key_bits":256,"curve":"","context":"","status":"Safe",
+            "key_size":256,"curve":"","context":"","status":"Safe",
             "risk_score":1.0,"pqc_flag":false})");
     ASSERT_TRUE(asset.has_value());
     EXPECT_EQ(asset->algorithm, "AES-256");
@@ -92,7 +92,7 @@ TEST(Serialization, ParseAssetMissingOptionalFieldsTakesDefaults) {
     EXPECT_EQ(asset->algorithm, "FOO");
     EXPECT_EQ(asset->source_type, "");
     EXPECT_EQ(asset->line, 0);
-    EXPECT_EQ(asset->key_bits, 0);
+    EXPECT_EQ(asset->key_size, 0);
     EXPECT_EQ(asset->curve, "");
     EXPECT_EQ(asset->status, Status::Unknown);
     EXPECT_EQ(asset->risk_score, 0.0);

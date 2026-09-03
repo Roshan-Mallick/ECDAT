@@ -34,7 +34,7 @@ struct TaxonomyEntry {
     std::string replacement;
 
     // Optional data-driven security overrides. When the classified asset's
-    // key_bits (zero meaning unknown) is below min_secure_key_bits, or its
+    // key_size (zero meaning unknown) is below min_secure_key_bits, or its
     // curve matches one of weak_curves (case-insensitive), the classifier
     // forces the status to at least Weak and adds +2.0 to the risk score.
     std::optional<long long> min_secure_key_bits;

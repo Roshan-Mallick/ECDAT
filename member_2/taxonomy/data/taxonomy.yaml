@@ -16,7 +16,7 @@
 #   replacement:      Recommended modern replacement algorithm (optional).
 #
 # Optional data-driven security overrides (avoid C++ changes for policy):
-#   min_secure_key_bits: If the asset key_bits > 0 and < this value, the
+#   min_secure_key_bits: If the asset key_size > 0 and < this value, the
 #                     algorithm is downgraded (status forced to at least Weak,
 #                     risk_score gets +2.0).
 #   weak_curves:      A list of curve names (matched case-insensitively) that

@@ -50,7 +50,7 @@ change**. Each entry:
 | `risk_base`            | number | yes      | Base risk in `[0,10]` |
 | `pqc_vulnerable`       | bool   | yes      | Threatened by quantum computing |
 | `replacement`          | string | no       | Recommended upgrade; empty = none |
-| `min_secure_key_bits`  | int    | no       | Downgrade if `key_bits` (when >0) is below this |
+| `min_secure_key_bits`  | int    | no       | Downgrade if `key_size` (when >0) is below this |
 | `weak_curves`          | list   | no       | Curves (case-insensitive) that trigger a downgrade |
 
 ## Classification precedence (deterministic)
@@ -66,7 +66,7 @@ change**. Each entry:
 ### Key / curve overrides
 
 * `min_secure_key_bits`: e.g. RSA threshold 2048 → `RSA` with 1024-bit keys is
-  downgraded (Weak, `+2.0`). A `key_bits` of 0 (unknown) is never downgraded.
+  downgraded (Weak, `+2.0`). A `key_size` of 0 (unknown) is never downgraded.
 * `weak_curves`: e.g. `ECDSA` on `P-192` is downgraded.
 
 ### Risk-score logic
@@ -102,7 +102,7 @@ resolve identically; the original display name is preserved in each entry.
 
 ```cpp
 enum class Status { Safe, Weak, Deprecated, Unknown };
-struct CryptoAsset { /* source_type, file, line, algorithm, key_bits, curve,
+struct CryptoAsset { /* source_type, file, line, algorithm, key_size, curve,
                         context, status, risk_score, pqc_flag */ };
 struct Finding { CryptoAsset asset; std::string message; };
 
@@ -158,7 +158,7 @@ ctest --test-dir build-sanitize --output-on-failure
 ## Notes / decisions
 
 * Empty taxonomy documents are tolerated as an empty database (safe, explicit).
-* `key_bits == 0` is treated as "unknown" and never triggers a size downgrade.
+* `key_size == 0` is treated as "unknown" and never triggers a size downgrade.
 * Optional fields in JSON missing → defaults; present-but-wrong-type → reject.
 * An empty `status`/`algorithm` string is not a valid algorithm and is treated
   as unknown by the classifier.

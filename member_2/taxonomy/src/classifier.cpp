@@ -38,8 +38,8 @@ bool iequals(std::string_view a, std::string_view b) {
 // actual thresholds are still supplied by taxonomy.yaml per algorithm (no
 // hard-coded algorithm list).
 bool requires_downgrade(const TaxonomyEntry& entry, const CryptoAsset& asset) {
-    if (entry.min_secure_key_bits.has_value() && asset.key_bits > 0 &&
-        asset.key_bits < *entry.min_secure_key_bits) {
+    if (entry.min_secure_key_bits.has_value() && asset.key_size > 0 &&
+        asset.key_size < *entry.min_secure_key_bits) {
         return true;
     }
     if (!asset.curve.empty()) {
