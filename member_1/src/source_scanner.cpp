@@ -23,8 +23,11 @@ static void walk(TSNode node, const std::string& src, const std::string& filepat
         if (!ts_node_is_null(func)) {
             uint32_t s = ts_node_start_byte(func), e = ts_node_end_byte(func);
             std::string call_text = src.substr(s, e - s);
+            std::size_t separator = call_text.rfind('.');
+            std::string function_name = call_text.substr(
+                separator == std::string::npos ? 0 : separator + 1);
             for (const auto& weak : WEAK_CALLS) {
-                if (call_text.find(weak) != std::string::npos) {
+                if (function_name == weak) {
                     ecdat::CryptoAsset a;
                     a.source_type = "source_code";
                     a.file = filepath;
