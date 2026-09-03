@@ -44,6 +44,14 @@ include(CTest)
 add_subdirectory(member_2)
 add_subdirectory(member_3)
 
+# Member 1 (discovery) is optional: it needs OpenSSL + tree-sitter. Only wire
+# it (and the Member1 -> 2 -> 3 flow) into the build when those are available,
+# so a minimal build without the discovery dependency still works.
+find_package(OpenSSL QUIET)
+if(OpenSSL_FOUND)
+    add_subdirectory(member_1)
+endif()
+
 # ---------------------------------------------------------------------------
 # Integration pipeline: connects Member 2 (classification) + Member 3 (risk)
 #
@@ -67,6 +75,20 @@ target_link_libraries(ecdat_pipeline
 target_compile_features(ecdat_pipeline PUBLIC cxx_std_20)
 
 # ---------------------------------------------------------------------------
+# Full Member 1 -> Member 2 -> Member 3 flow (only when Member 1 is present)
+# ---------------------------------------------------------------------------
+if(TARGET discovery_lib)
+    add_library(ecdat_flow STATIC
+        integration/flow.cpp)
+    target_include_directories(ecdat_flow PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/integration
+        ${CMAKE_CURRENT_SOURCE_DIR}/member_1/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/member_2/core/include)
+    target_link_libraries(ecdat_flow PUBLIC discovery_lib ecdat_pipeline)
+    target_compile_features(ecdat_flow PUBLIC cxx_std_20)
+endif()
+
+# ---------------------------------------------------------------------------
 # Integration tests & demo (only when building with tests)
 # ---------------------------------------------------------------------------
 include(GoogleTest)
@@ -88,4 +110,26 @@ if(BUILD_TESTING AND ECDAT_BUILD_TESTS)
         ECDAT_TAXONOMY_PATH="${CMAKE_CURRENT_SOURCE_DIR}/member_2/taxonomy/data/taxonomy.yaml"
         DEMO_OUTPUT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/member_2/temp_out")
     target_compile_features(ecdat_combined_demo PRIVATE cxx_std_20)
+
+    # Full Member 1 -> Member 2 -> Member 3 flow test + demo (when Member 1 present)
+    if(TARGET ecdat_flow)
+        add_executable(ecdat_flow_tests
+            integration/test_flow.cpp)
+        target_link_libraries(ecdat_flow_tests PRIVATE ecdat_flow GTest::gtest_main)
+        target_compile_definitions(ecdat_flow_tests PRIVATE
+            ECDAT_TAXONOMY_PATH="${CMAKE_CURRENT_SOURCE_DIR}/member_2/taxonomy/data/taxonomy.yaml"
+            M1_FIXTURE_PY="${CMAKE_CURRENT_SOURCE_DIR}/member_1/fixtures/sample.py"
+            M1_FIXTURE_TLS="${CMAKE_CURRENT_SOURCE_DIR}/member_1/fixtures/sample_nginx.conf")
+        target_compile_features(ecdat_flow_tests PRIVATE cxx_std_20)
+        gtest_discover_tests(ecdat_flow_tests)
+
+        add_executable(ecdat_discovery_driver
+            integration/flow_driver.cpp)
+        target_link_libraries(ecdat_discovery_driver PRIVATE ecdat_flow)
+        target_compile_definitions(ecdat_discovery_driver PRIVATE
+            ECDAT_TAXONOMY_PATH="${CMAKE_CURRENT_SOURCE_DIR}/member_2/taxonomy/data/taxonomy.yaml"
+            M1_FIXTURE_PY="${CMAKE_CURRENT_SOURCE_DIR}/member_1/fixtures/sample.py"
+            M1_FIXTURE_TLS="${CMAKE_CURRENT_SOURCE_DIR}/member_1/fixtures/sample_nginx.conf")
+        target_compile_features(ecdat_discovery_driver PRIVATE cxx_std_20)
+    endif()
 endif()

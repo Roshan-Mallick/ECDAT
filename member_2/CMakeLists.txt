@@ -11,6 +11,7 @@ project(ecdat_member2
 # ---------------------------------------------------------------------------
 option(ECDAT_ENABLE_SANITIZERS "Build Member 2 with Address+UB sanitizers" OFF)
 option(ECDAT_BUILD_TESTS "Build Member 2 unit tests" ON)
+option(ECDAT_FETCH_DEPENDENCIES "Download missing dependencies from GitHub" OFF)
 
 # ---------------------------------------------------------------------------
 # Global settings
@@ -26,34 +27,83 @@ endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # ---------------------------------------------------------------------------
-# Dependencies (FetchContent)
+# Dependencies
 # ---------------------------------------------------------------------------
-include(FetchContent)
-
-# nlohmann-json (header only)
-FetchContent_Declare(
-    nlohmann_json
-    GIT_REPOSITORY https://github.com/nlohmann/json.git
-    GIT_TAG v3.11.3)
-
-# yaml-cpp (YAML parsing for the taxonomy)
-FetchContent_Declare(
-    yaml-cpp
-    GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
-    GIT_TAG 0.8.0)
-
-# GoogleTest
+# Prefer system packages so a normal configure never blocks on network I/O.
+# Git-based FetchContent remains available as an explicit opt-in fallback.
+find_package(nlohmann_json CONFIG QUIET)
+find_package(yaml-cpp CONFIG QUIET)
 if(ECDAT_BUILD_TESTS)
-    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-    FetchContent_Declare(
-        googletest
-        GIT_REPOSITORY https://github.com/google/googletest.git
-        GIT_TAG v1.14.0)
+    find_package(GTest QUIET)
+    if(NOT TARGET GTest::gtest_main)
+        find_path(GTEST_INCLUDE_DIR gtest/gtest.h)
+        find_library(GTEST_LIBRARY NAMES gtest)
+        find_library(GTEST_MAIN_LIBRARY NAMES gtest_main)
+        if(GTEST_INCLUDE_DIR AND GTEST_LIBRARY AND GTEST_MAIN_LIBRARY)
+            include(FindThreads)
+            add_library(GTest::gtest STATIC IMPORTED GLOBAL)
+            set_target_properties(GTest::gtest PROPERTIES
+                IMPORTED_LOCATION "${GTEST_LIBRARY}"
+                INTERFACE_INCLUDE_DIRECTORIES "${GTEST_INCLUDE_DIR}"
+                INTERFACE_LINK_LIBRARIES Threads::Threads)
+            add_library(GTest::gtest_main STATIC IMPORTED GLOBAL)
+            set_target_properties(GTest::gtest_main PROPERTIES
+                IMPORTED_LOCATION "${GTEST_MAIN_LIBRARY}"
+                INTERFACE_INCLUDE_DIRECTORIES "${GTEST_INCLUDE_DIR}"
+                INTERFACE_LINK_LIBRARIES "Threads::Threads;GTest::gtest")
+        endif()
+    endif()
+    if(TARGET GTest::gtest AND TARGET GTest::gtest_main)
+        set_property(TARGET GTest::gtest PROPERTY IMPORTED_GLOBAL TRUE)
+        set_property(TARGET GTest::gtest_main PROPERTY IMPORTED_GLOBAL TRUE)
+    endif()
 endif()
 
-FetchContent_MakeAvailable(nlohmann_json yaml-cpp)
-if(ECDAT_BUILD_TESTS)
-    FetchContent_MakeAvailable(googletest)
+if(ECDAT_FETCH_DEPENDENCIES AND
+   (NOT nlohmann_json_FOUND OR NOT yaml-cpp_FOUND OR
+    (ECDAT_BUILD_TESTS AND NOT GTest_FOUND)))
+    include(FetchContent)
+
+    if(NOT nlohmann_json_FOUND)
+        FetchContent_Declare(
+            nlohmann_json
+            GIT_REPOSITORY https://github.com/nlohmann/json.git
+            GIT_TAG v3.11.3)
+        FetchContent_MakeAvailable(nlohmann_json)
+    endif()
+
+    if(NOT yaml-cpp_FOUND)
+        FetchContent_Declare(
+            yaml-cpp
+            GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
+            GIT_TAG 0.8.0)
+        FetchContent_MakeAvailable(yaml-cpp)
+    endif()
+
+    if(ECDAT_BUILD_TESTS AND NOT GTest_FOUND)
+        set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+        FetchContent_Declare(
+            googletest
+            GIT_REPOSITORY https://github.com/google/googletest.git
+            GIT_TAG v1.14.0)
+        FetchContent_MakeAvailable(googletest)
+    endif()
+endif()
+
+if(NOT nlohmann_json_FOUND AND NOT TARGET nlohmann_json::nlohmann_json)
+    message(FATAL_ERROR
+        "nlohmann_json is required. Install nlohmann-json3-dev or configure "
+        "with -DECDAT_FETCH_DEPENDENCIES=ON.")
+endif()
+if(NOT yaml-cpp_FOUND AND NOT TARGET yaml-cpp::yaml-cpp)
+    message(FATAL_ERROR
+        "yaml-cpp is required. Install libyaml-cpp-dev or configure "
+        "with -DECDAT_FETCH_DEPENDENCIES=ON.")
+endif()
+if(ECDAT_BUILD_TESTS AND NOT GTest_FOUND AND NOT TARGET GTest::gtest_main)
+    message(FATAL_ERROR
+        "GoogleTest is required when ECDAT_BUILD_TESTS=ON. Install libgtest-dev "
+        "or configure with -DECDAT_FETCH_DEPENDENCIES=ON.")
 endif()
 
 # ---------------------------------------------------------------------------

@@ -62,7 +62,7 @@ bool contains(std::string_view haystack, std::string_view needle) {
 Role detect_role(std::string_view type, std::string_view context) {
     if (contains(type, "signature") || contains(type, "sign") ||
         contains(context, "signature") || contains(context, "sign") ||
-        contains(context, "signing")) {
+        contains(context, "signing") || contains(context, "cert")) {
         return Role::Signature;
     }
     if (contains(type, "key-exchange") || contains(type, "key_exchange") ||
