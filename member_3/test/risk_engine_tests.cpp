@@ -8,7 +8,7 @@
 //   g++ -std=c++17 -Wall -Wextra risk/risk_engine.cpp tests/risk_engine_tests.cpp -o risk_engine_test
 //   ./risk_engine_test
 
-#include "../risk/risk_engine.h"
+#include "risk/risk_engine.h"
 
 #include <cmath>
 #include <iostream>
