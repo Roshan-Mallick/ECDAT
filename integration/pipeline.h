@@ -2,20 +2,28 @@
 
 // ECDAT Integration Pipeline
 //
-// Connects Member 2 (classification) with Member 3 (risk engine).
+// Connects Member 2 (classification) with Member 3 (risk engine + PQC
+// intelligence). The pipeline is a THIN adapter: it passes the real Member 2
+// CryptoAsset and its classification directly into Member 3 and adapts only
+// the interface boundary (risk score scale). It owns no classification or
+// intelligence logic.
 //
-//   CryptoAsset → classify_asset() → risk_score [0-10]
-//                                          ↓ (scale ×10)
-//   weakness [0-100] + exposure + remediation → calculateRisk()
-//                                                      ↓
-//                                              RiskLevel + final score
+//   Member 2 CryptoAsset
+//        ↓ classify_asset()          [Member 2, authoritative taxonomy]
+//        ↓ risk_score [0-10] → ×10 → weakness
+//        ↓                            [Member 3]
+//        ↓ calculateRisk()            risk engine
+//        ↓ map_migration()            PQC migration (role-aware)
+//        ↓ explain()                  What / Where / Why / Action
 //
-// This module owns no classification or risk logic itself. It delegates
-// to the existing member libraries and adapts their interfaces.
+// Member 3 receives the real CryptoAsset (algorithm, key_size, curve, file,
+// line, context) and the Member 2 Classification (status, pqc_flag), so it
+// never needs to reconstruct or duplicate asset data.
 
 #include "ecdat/types.hpp"
 #include "ecdat/taxonomy.hpp"
 #include "risk/risk_engine.h"
+#include "pqc/pqc.h"
 
 #include <string>
 
@@ -35,18 +43,24 @@ struct PipelineResult {
     double  remediation  = 0.0;
     double  final_risk   = 0.0;   // Member 3 weighted score (0-100)
     risk::RiskLevel risk_level = risk::RiskLevel::LOW;
+
+    // From Member 3 PQC intelligence (built from the real CryptoAsset)
+    pqc::Migration migration;
+    pqc::Explanation explanation;
 };
 
 // Run a single CryptoAsset through the full ECDAT pipeline.
 //
 // Parameters:
-//   asset        - the asset to classify and score
-//   db           - the loaded taxonomy database
+//   asset        - the real asset to classify and score (its fields are
+//                  preserved and forwarded to Member 3)
+//   db           - the Member 2 authoritative taxonomy database
 //   exposure     - 0-100, how exposed/public this asset is
 //   remediation  - 0-100, how hard the fix would be
 //
 // Returns:
-//   A PipelineResult containing classification + risk results.
+//   A PipelineResult containing classification, risk, migration, and
+//   explanation results.
 //
 // Throws:
 //   std::invalid_argument if exposure/remediation are out of 0-100 range.

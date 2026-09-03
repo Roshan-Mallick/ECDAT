@@ -114,7 +114,14 @@ int main() {
                   << "    Remediation:" << r.remediation << "\n"
                   << "    FinalRisk:  " << r.final_risk << " (weighted)\n"
                   << "    RiskLevel:  " << ecdat::risk::riskLevelToString(r.risk_level) << "\n"
-                  << "    PQC:        " << (r.pqc_flag ? "YES" : "no") << "\n\n";
+                  << "    PQC:        " << (r.pqc_flag ? "YES" : "no") << "\n";
+        if (r.migration.supported) {
+            std::cout << "    Migration:  " << r.migration.algorithm << " ("
+                      << r.migration.role << ") -> " << r.migration.replacement << "\n";
+        }
+        std::cout << "    Where:      " << r.explanation.where << "\n"
+                  << "    Why:        " << r.explanation.why << "\n"
+                  << "    Action:     " << r.explanation.action << "\n\n";
 
         // Write per-asset JSON
         ecdat::CryptoAsset out = ca;

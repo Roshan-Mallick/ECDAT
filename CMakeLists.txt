@@ -33,6 +33,12 @@ if(ECDAT_ENABLE_SANITIZERS)
 endif()
 
 # ---------------------------------------------------------------------------
+# Enable testing before any subdirectory so add_test() calls are registered.
+# ---------------------------------------------------------------------------
+enable_testing()
+include(CTest)
+
+# ---------------------------------------------------------------------------
 # Member modules (each subdirectory defines its own libraries/tests)
 # ---------------------------------------------------------------------------
 add_subdirectory(member_2)
@@ -54,15 +60,15 @@ target_include_directories(ecdat_pipeline PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/integration
     ${CMAKE_CURRENT_SOURCE_DIR}/member_2/core/include
     ${CMAKE_CURRENT_SOURCE_DIR}/member_2/taxonomy/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/member_3)
+    ${CMAKE_CURRENT_SOURCE_DIR}/member_3
+    ${CMAKE_CURRENT_SOURCE_DIR}/member_3/pqc)
 target_link_libraries(ecdat_pipeline
-    PUBLIC ecdat_taxonomy ecdat_risk)
+    PUBLIC ecdat_taxonomy ecdat_risk ecdat_pqc)
 target_compile_features(ecdat_pipeline PUBLIC cxx_std_20)
 
 # ---------------------------------------------------------------------------
 # Integration tests & demo (only when building with tests)
 # ---------------------------------------------------------------------------
-include(CTest)
 include(GoogleTest)
 
 if(BUILD_TESTING AND ECDAT_BUILD_TESTS)

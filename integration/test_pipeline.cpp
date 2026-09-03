@@ -13,6 +13,8 @@ TaxonomyDB test_db() {
 algorithms:
   - {name: AES-256, type: symmetric, status: Safe, risk_base: 1.0, pqc_vulnerable: false, replacement: ""}
   - {name: RSA, type: asymmetric, status: Weak, risk_base: 5.0, pqc_vulnerable: true, replacement: ECDSA-P256, min_secure_key_bits: 2048}
+  - {name: ECDSA, type: signature, status: Weak, risk_base: 5.5, pqc_vulnerable: true, replacement: ECDSA-P384}
+  - {name: DH, type: key-exchange, status: Deprecated, risk_base: 7.0, pqc_vulnerable: true, replacement: ECDH, min_secure_key_bits: 2048}
   - {name: MD5, type: hash, status: Deprecated, risk_base: 9.0, pqc_vulnerable: false, replacement: SHA-256}
 )");
 }
@@ -156,6 +158,60 @@ TEST(Pipeline, PqcFlagPropagated) {
     auto r = run_pipeline(make("RSA", 2048), db, 50.0, 50.0);
     EXPECT_TRUE(r.pqc_flag);
     EXPECT_EQ(r.taxonomy_entry->pqc_vulnerable, true);
+}
+
+// ---- Real CryptoAsset reaching Member 3 (thin adapter, no reconstruction) --
+
+TEST(Pipeline, RealAssetFlowsIntoMember3Migration) {
+    auto db = test_db();
+    CryptoAsset a = make("RSA", 2048);
+    a.file = "server.cpp";
+    a.line = 87;
+    a.context = "TLS certificate signing";
+
+    auto r = run_pipeline(a, db, 50.0, 50.0);
+
+    // Member 3 produces a role-aware migration from the real asset.
+    EXPECT_TRUE(r.migration.supported);
+    EXPECT_EQ(r.migration.replacement, "ML-DSA");
+    EXPECT_EQ(r.migration.algorithm, "RSA");
+}
+
+TEST(Pipeline, RealAssetFieldsAppearInExplanation) {
+    auto db = test_db();
+    CryptoAsset a = make("RSA", 1024);
+    a.file = "server.cpp";
+    a.line = 87;
+
+    auto r = run_pipeline(a, db, 80.0, 60.0);
+
+    EXPECT_EQ(r.explanation.what, "RSA-1024 detected");
+    EXPECT_EQ(r.explanation.where, "server.cpp:87");
+    EXPECT_NE(r.explanation.why.find("quantum-vulnerable"), std::string::npos);
+    EXPECT_NE(r.explanation.action.find("ML-DSA"), std::string::npos);
+}
+
+TEST(Pipeline, PqcDetectionAcrossMembers) {
+    auto db = test_db();
+    EXPECT_TRUE(run_pipeline(make("RSA", 2048), db, 50.0, 50.0).pqc_flag);
+    EXPECT_FALSE(run_pipeline(make("AES-256", 256), db, 50.0, 50.0).pqc_flag);
+}
+
+TEST(Pipeline, KeySizePreservedThroughPipeline) {
+    auto db = test_db();
+    CryptoAsset a = make("RSA", 3072);
+    auto r = run_pipeline(a, db, 50.0, 50.0);
+    // Weakness scaled directly from Member 2 risk (no downgrade): 5.0 -> 50.
+    EXPECT_DOUBLE_EQ(r.weakness, 50.0);
+    EXPECT_EQ(a.key_size, 3072);
+}
+
+TEST(Pipeline, DhKeyExchangeMapsToMlKemThroughPipeline) {
+    auto db = test_db();
+    CryptoAsset a = make("DH", 2048);
+    auto r = run_pipeline(a, db, 50.0, 50.0);
+    EXPECT_TRUE(r.migration.supported);
+    EXPECT_EQ(r.migration.replacement, "ML-KEM");
 }
 
 } // namespace
