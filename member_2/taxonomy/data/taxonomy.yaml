@@ -1,0 +1,144 @@
+# ECDAT taxonomy: the configurable source of cryptographic algorithm metadata.
+#
+# Member 2 (Data & Taxonomy Engineer) treats this file as the single source of
+# truth for algorithm classification. Adding, modifying, or removing an
+# algorithm here normally requires NO C++ source-code change (see README).
+#
+# Schema (per algorithm entry):
+#   name:             Display name (must be unique after normalization).
+#   type:             Category: symmetric, asymmetric, hash, signature,
+#                     key-exchange, mac, ...
+#   status:           One of Safe, Weak, Deprecated, Unknown.
+#   risk_base:        Base risk contribution in [0,10]; classification adds
+#                     policy-driven adjustments then clamps to [0,10].
+#   pqc_vulnerable:   True if the algorithm is threatened by quantum computing
+#                     (Shor/Grover) and should be flagged for PQC migration.
+#   replacement:      Recommended modern replacement algorithm (optional).
+#
+# Optional data-driven security overrides (avoid C++ changes for policy):
+#   min_secure_key_bits: If the asset key_bits > 0 and < this value, the
+#                     algorithm is downgraded (status forced to at least Weak,
+#                     risk_score gets +2.0).
+#   weak_curves:      A list of curve names (matched case-insensitively) that
+#                     are considered too small / weak; triggers the same
+#                     downgrade.
+
+algorithms:
+  - name: MD5
+    type: hash
+    status: Deprecated
+    risk_base: 9.0
+    pqc_vulnerable: false
+    replacement: SHA-256
+
+  - name: SHA-1
+    type: hash
+    status: Deprecated
+    risk_base: 8.0
+    pqc_vulnerable: false
+    replacement: SHA-256
+
+  - name: SHA-256
+    type: hash
+    status: Safe
+    risk_base: 1.0
+    pqc_vulnerable: false
+    replacement: ""
+
+  - name: DES
+    type: symmetric
+    status: Deprecated
+    risk_base: 9.0
+    pqc_vulnerable: false
+    replacement: AES-256
+
+  - name: 3DES
+    type: symmetric
+    status: Deprecated
+    risk_base: 8.0
+    pqc_vulnerable: false
+    replacement: AES-256
+
+  - name: RC4
+    type: symmetric
+    status: Deprecated
+    risk_base: 9.5
+    pqc_vulnerable: false
+    replacement: AES-256
+    min_secure_key_bits: 128
+
+  - name: AES-128
+    type: symmetric
+    status: Safe
+    risk_base: 2.0
+    pqc_vulnerable: false
+    replacement: ""
+
+  - name: AES-256
+    type: symmetric
+    status: Safe
+    risk_base: 1.0
+    pqc_vulnerable: false
+    replacement: ""
+
+  - name: ChaCha20
+    type: symmetric
+    status: Safe
+    risk_base: 1.0
+    pqc_vulnerable: false
+    replacement: ""
+
+  - name: RSA
+    type: asymmetric
+    status: Weak
+    risk_base: 5.0
+    pqc_vulnerable: true
+    replacement: ECDSA-P256
+    min_secure_key_bits: 2048
+
+  - name: DSA
+    type: asymmetric
+    status: Deprecated
+    risk_base: 7.0
+    pqc_vulnerable: true
+    replacement: ECDSA-P256
+    min_secure_key_bits: 2048
+
+  - name: ECDSA
+    type: signature
+    status: Weak
+    risk_base: 5.5
+    pqc_vulnerable: true
+    replacement: ECDSA-P384
+    min_secure_key_bits: 256
+    weak_curves: [P-192, P-160, secp160k1]
+
+  - name: ECDSA-P256
+    type: signature
+    status: Weak
+    risk_base: 5.5
+    pqc_vulnerable: true
+    replacement: PQC-Dilithium
+    weak_curves: [P-192, P-160]
+
+  - name: ECDSA-P384
+    type: signature
+    status: Weak
+    risk_base: 4.0
+    pqc_vulnerable: true
+    replacement: PQC-Dilithium
+
+  - name: DH
+    type: key-exchange
+    status: Deprecated
+    risk_base: 7.0
+    pqc_vulnerable: true
+    replacement: ECDH
+    min_secure_key_bits: 2048
+
+  - name: ECDH
+    type: key-exchange
+    status: Weak
+    risk_base: 5.0
+    pqc_vulnerable: true
+    replacement: PQC-Kyber
