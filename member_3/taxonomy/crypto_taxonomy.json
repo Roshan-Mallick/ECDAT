@@ -1,0 +1,32 @@
+{
+  "RSA": {
+    "weakness": 40,
+    "remediation": 60,
+    "role": "signature",
+    "pqc_vulnerable": true
+  },
+  "ECDSA": {
+    "weakness": 30,
+    "remediation": 60,
+    "role": "signature",
+    "pqc_vulnerable": true
+  },
+  "DH": {
+    "weakness": 50,
+    "remediation": 70,
+    "role": "key_exchange",
+    "pqc_vulnerable": true
+  },
+  "AES-256": {
+    "weakness": 10,
+    "remediation": 10,
+    "role": "encryption",
+    "pqc_vulnerable": false
+  },
+  "MD5": {
+    "weakness": 90,
+    "remediation": 20,
+    "role": "hash",
+    "pqc_vulnerable": false
+  }
+}

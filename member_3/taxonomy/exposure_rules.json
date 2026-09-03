@@ -1,0 +1,5 @@
+{
+  "public": 80,
+  "internal": 20,
+  "default": "internal"
+}
