@@ -211,9 +211,9 @@ jobs:
           VALIDATION_DIR=$(mktemp -d)
           cd "${VALIDATION_DIR}"
           7z x "${{ github.workspace }}/ECDAT-${VERSION}-windows-x86_64.zip"
-          ./ECDAT-${VERSION}/bin/ecdat.exe --version
-          test -f ./ECDAT-${VERSION}/bin/resources/taxonomy.yaml
-          ./ECDAT-${VERSION}/bin/ecdat.exe scan "${{ github.workspace }}"
+          ./ECDAT-${VERSION}-windows-x86_64/bin/ecdat.exe --version
+          test -f ./ECDAT-${VERSION}-windows-x86_64/bin/resources/taxonomy.yaml
+          ./ECDAT-${VERSION}-windows-x86_64/bin/ecdat.exe scan "${{ github.workspace }}"
           rm -rf "${VALIDATION_DIR}"
 
       - name: Upload artifacts
