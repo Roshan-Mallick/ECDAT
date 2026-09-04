@@ -82,6 +82,7 @@ if(ECDAT_FETCH_DEPENDENCIES AND
 
     if(ECDAT_BUILD_TESTS AND NOT GTest_FOUND)
         set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+        set(INSTALL_GTEST OFF CACHE BOOL "do not install gtest/gmock into ECDAT package" FORCE)
         FetchContent_Declare(
             googletest
             GIT_REPOSITORY https://github.com/google/googletest.git

@@ -11,6 +11,7 @@ project(ecdat
 # ---------------------------------------------------------------------------
 option(ECDAT_ENABLE_SANITIZERS "Build with ASan + UBSan" OFF)
 option(ECDAT_BUILD_TESTS       "Build all unit tests"    ON)
+option(ECDAT_FETCH_DEPENDENCIES "Download missing dependencies from GitHub (self-bootstrapping)" OFF)
 
 # ---------------------------------------------------------------------------
 # Global settings
@@ -121,3 +122,38 @@ if(BUILD_TESTING AND ECDAT_BUILD_TESTS)
         gtest_discover_tests(ecdat_flow_tests)
     endif()
 endif()
+
+# ---------------------------------------------------------------------------
+# Installation & packaging
+# ---------------------------------------------------------------------------
+include(GNUInstallDirs)
+
+# Install the primary CLI binary (defined in platform/CMakeLists.txt).
+install(TARGETS ecdat
+    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+
+# Install application data (taxonomy). The CLI resolves this from the
+# executable location at runtime, so it works from any working directory.
+install(FILES taxonomy/taxonomy/data/taxonomy.yaml
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/ecdat")
+# Also place a copy next to the binary for relocatable/unpacked use.
+install(FILES taxonomy/taxonomy/data/taxonomy.yaml
+    DESTINATION "${CMAKE_INSTALL_BINDIR}/resources")
+
+# ---------------------------------------------------------------------------
+# CPack: standalone tar.gz and Debian package
+# ---------------------------------------------------------------------------
+set(CPACK_PACKAGE_NAME "ecdat")
+set(CPACK_PACKAGE_VENDOR "ECDAT Project Team")
+set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Enterprise Cryptography Discovery & Assessment Tool")
+set(CPACK_PACKAGE_CONTACT "ECDAT Project Team")
+set(CPACK_PACKAGE_LICENSE "Apache-2.0")
+set(CPACK_PACKAGE_FILE_NAME "ECDAT-${PROJECT_VERSION}")
+set(CPACK_STRIP_FILES TRUE)
+set(CPACK_GENERATOR "TGZ;DEB")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "ECDAT Project Team")
+set(CPACK_DEBIAN_PACKAGE_SECTION "utils")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.31), libstdc++6 (>= 12), libssl3 (>= 3.0)")
+include(CPack)

@@ -19,20 +19,47 @@ else()
     endif()
 endif()
 
-# tree-sitter: link manually if not found via pkg-config
-find_library(TREE_SITTER_LIB tree-sitter)
-find_library(TREE_SITTER_PY_LIB tree-sitter-python)
+# tree-sitter: first try to locate system/shared libraries. If they are not
+# present and ECDAT_FETCH_DEPENDENCIES=ON, vendor (FetchContent) a static
+# tree-sitter + tree-sitter-python so a fresh developer build is fully
+# self-bootstrapping. When unavailable and fetch is disabled, discovery is
+# skipped gracefully so the rest of the build still works.
+find_library(TREE_SITTER_LIB NAMES tree-sitter)
+find_library(TREE_SITTER_PY_LIB NAMES tree-sitter-python)
 find_path(TREE_SITTER_INCLUDE_DIR tree_sitter/api.h)
 
-# Member 1 (discovery) needs tree-sitter at build time. When this module is a
-# subdirectory of the integrated ECDAT build, silently skip it if the
-# tree-sitter libraries are unavailable so the rest of the build still works.
 if(NOT TREE_SITTER_LIB OR NOT TREE_SITTER_PY_LIB OR NOT TREE_SITTER_INCLUDE_DIR)
-    if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-        message(FATAL_ERROR "tree-sitter and tree-sitter-python libraries are required for the standalone Member 1 build.")
+    if(ECDAT_FETCH_DEPENDENCIES)
+        include(FetchContent)
+        set(BUILD_SHARED_LIBS OFF CACHE BOOL "build tree-sitter static for ECDAT" FORCE)
+        set(TREE_SITTER_CLI "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/tree-sitter-noop.sh"
+            CACHE FILEPATH "no-op tree-sitter CLI for vendored tree-sitter-python" FORCE)
+        FetchContent_Declare(
+            tree_sitter
+            GIT_REPOSITORY https://github.com/tree-sitter/tree-sitter.git
+            GIT_TAG ee0c20b1f5fa26d0c567d5f438b0ac46644b530b)
+        FetchContent_Declare(
+            tree_sitter_python
+            GIT_REPOSITORY https://github.com/tree-sitter/tree-sitter-python.git
+            GIT_TAG 26855eabccb19c6abf499fbc5b8dc7cc9ab8bc64)
+        FetchContent_MakeAvailable(tree_sitter tree_sitter_python)
+        if(TARGET tree-sitter AND TARGET tree-sitter-python)
+            set(TREE_SITTER_LIB tree-sitter)
+            set(TREE_SITTER_PY_LIB tree-sitter-python)
+            set(TREE_SITTER_INCLUDE_DIR "${FETCHCONTENT_BASE_DIR}/tree_sitter-src/lib/include")
+            message(STATUS "ECDAT: vendoring tree-sitter + tree-sitter-python via FetchContent.")
+        else()
+            message(FATAL_ERROR "tree-sitter FetchContent targets were not produced.")
+        endif()
+    else()
+        if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+            message(FATAL_ERROR
+                "tree-sitter and tree-sitter-python libraries are required. Install them "
+                "or configure with -DECDAT_FETCH_DEPENDENCIES=ON to vendor them.")
+        endif()
+        message(STATUS "ECDAT: tree-sitter not found and fetch disabled; skipping Member 1 (discovery).")
+        return()
     endif()
-    message(STATUS "ECDAT: tree-sitter not found; skipping Member 1 (discovery).")
-    return()
 endif()
 
 # ---------------------------------------------------------------------------

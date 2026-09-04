@@ -19,6 +19,7 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#include <cstdlib>
 #include <unistd.h>
 
 #ifndef ECDAT_TAXONOMY_PATH
@@ -69,13 +70,33 @@ private:
 };
 
 std::string find_taxonomy_path() {
-    std::vector<std::string> candidates = {
-        ECDAT_TAXONOMY_PATH,
-        "taxonomy/taxonomy/data/taxonomy.yaml",
-        "../taxonomy/taxonomy/data/taxonomy.yaml",
-        "../../taxonomy/taxonomy/data/taxonomy.yaml",
-        "/etc/ecdat/taxonomy.yaml"
-    };
+    // Allow an explicit override (useful for packagers and testing).
+    if (const char* env = std::getenv("ECDAT_TAXONOMY")) {
+        if (std::filesystem::exists(env)) {
+            return env;
+        }
+    }
+
+    std::vector<std::string> candidates;
+
+    // Paths relative to the running executable so ECDAT works from any working
+    // directory. Works for an unpacked tarball, a system install, or a dev tree.
+    const auto exe_abs = std::filesystem::absolute(std::filesystem::path("/proc/self/exe"));
+    std::string exe_dir = exe_abs.parent_path().string();
+    candidates.push_back(exe_dir + "/resources/taxonomy.yaml");
+    candidates.push_back(exe_dir + "/../share/ecdat/taxonomy.yaml");
+    candidates.push_back(exe_dir + "/../resources/taxonomy.yaml");
+
+    // Legacy / development-tree relative paths.
+    candidates.push_back(ECDAT_TAXONOMY_PATH);
+    candidates.push_back("taxonomy/taxonomy/data/taxonomy.yaml");
+    candidates.push_back("../taxonomy/taxonomy/data/taxonomy.yaml");
+    candidates.push_back("../../taxonomy/taxonomy/data/taxonomy.yaml");
+
+    // System-wide fallback for packaged (e.g. .deb) installs.
+    candidates.push_back("/usr/share/ecdat/taxonomy.yaml");
+    candidates.push_back("/etc/ecdat/taxonomy.yaml");
+
     for (const auto& path : candidates) {
         if (std::filesystem::exists(path)) {
             return path;

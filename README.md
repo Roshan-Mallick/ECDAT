@@ -309,9 +309,11 @@ ECDAT/
 | **nlohmann/json** | 3.11+ | Member 2 (core) | JSON serialization |
 | **yaml-cpp** | 0.8+ | Member 2 (taxonomy) | YAML taxonomy loading |
 | **OpenSSL** | system | Member 1 (optional) | X.509 certificate parsing |
-| **tree-sitter** | system | Member 1 (optional) | Python AST parsing |
-| **tree-sitter-python** | system | Member 1 (optional) | Python grammar |
+| **tree-sitter** | 0.28+ | Member 1 (optional) | Python AST parsing |
+| **tree-sitter-python** | 0.25+ | Member 1 (optional) | Python grammar |
 | **GoogleTest** | 1.14+ | All test targets | Unit testing |
+
+nlohmann/json, yaml-cpp, GoogleTest, tree-sitter, and tree-sitter-python are **automatically fetched from GitHub** when `-DECDAT_FETCH_DEPENDENCIES=ON` is passed and the system package is not found. This makes the build fully self-bootstrapping — no manual dependency installation is needed.
 
 ### Vendored (in-tree)
 
@@ -328,9 +330,9 @@ ECDAT/
 - **CMake**: 3.21 or newer
 - **Build tool**: Ninja or Make
 - **OpenSSL**: Development libraries (for Member 1 — optional, gracefully skipped if absent)
-- **tree-sitter** + **tree-sitter-python**: Shared libraries (for Member 1 — optional)
+- **tree-sitter** + **tree-sitter-python**: Shared libraries (for Member 1 — optional; can be vendored via FetchContent)
 
-Member 2, Member 3, integration, and Member 4 build without external system dependencies — nlohmann/json, yaml-cpp, and GoogleTest are fetched automatically via CMake FetchContent when not found on the system.
+Member 2, Member 3, integration, and Member 4 build without external system dependencies — nlohmann/json, yaml-cpp, GoogleTest, tree-sitter, and tree-sitter-python are all fetched automatically via CMake FetchContent when `-DECDAT_FETCH_DEPENDENCIES=ON` is passed and the system packages are not found.
 
 ## 9. Building ECDAT
 
@@ -353,12 +355,24 @@ The `ecdat` binary will be at `build/platform/ecdat`.
 |--------|---------|-------------|
 | `ECDAT_BUILD_TESTS` | `ON` | Build all unit tests |
 | `ECDAT_ENABLE_SANITIZERS` | `OFF` | Build with AddressSanitizer + UndefinedBehaviorSanitizer |
+| `ECDAT_FETCH_DEPENDENCIES` | `OFF` | Download missing dependencies from GitHub (self-bootstrapping build) |
 
 ```bash
 # Debug build with sanitizers
 cmake -S . -B build-debug -DCMAKE_BUILD_TYPE=Debug -DECDAT_ENABLE_SANITIZERS=ON
 cmake --build build-debug -j$(nproc)
 ```
+
+### Self-Bootstrapping Build (no system deps needed)
+
+```bash
+# Fully self-contained: fetches tree-sitter, nlohmann/json, yaml-cpp, gtest from GitHub
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DECDAT_FETCH_DEPENDENCIES=ON
+cmake --build build -j$(nproc)
+ctest --test-dir build --output-on-failure  # 120/120 tests pass
+```
+
+This requires only a C++20 compiler, CMake 3.21+, and a network connection on the first configure. All C++ dependencies are downloaded and built from source automatically. Subsequent rebuilds use the cached downloads.
 
 ### Minimal Build (without Member 1)
 
@@ -381,9 +395,9 @@ ctest --test-dir build --output-on-failure
 | `Serialization.*` | 11 | JSON round-trip, strict validation, error handling |
 | `Taxonomy.*` | 15 | YAML loading, case-insensitive lookup, schema validation |
 | `Classifier.*` | 26 | Status classification, risk scoring, curve/key-size downgrade, PQC flag |
-| `risk_engine_tests` | 8 | Risk formula, RiskLevel boundaries, input validation |
-| `PqcMigration.*` | 8 | Role-aware migration, ML-DSA/ML-KEM mapping |
-| `PqcReadiness.*` | 5 | Readiness percentage, edge cases |
+| `risk_engine_tests` | 9 | Risk formula, RiskLevel boundaries, input validation |
+| `PqcMigration.*` | 7 | Role-aware migration, ML-DSA/ML-KEM mapping |
+| `PqcReadiness.*` | 6 | Readiness percentage, edge cases |
 | `PqcExplanation.*` | 3 | Explanation generation from real assets |
 | `PqcContract.*` | 1 | `key_size` field preservation |
 | `StorageTest.*` | 8 | SQLite CRUD, history, disk persistence, SQL injection defense |
@@ -399,7 +413,70 @@ cmake --build build-asan -j$(nproc)
 ctest --test-dir build-asan --output-on-failure
 ```
 
-## 11. CLI
+## 11. Installation / Distribution
+
+### Pre-built Tarball
+
+Download the `ECDAT-0.1.0-linux-x86_64.tar.gz` release archive, extract, and run:
+
+```bash
+tar xzf ECDAT-0.1.0-linux-x86_64.tar.gz
+./ECDAT-0.1.0/bin/ecdat scan /path/to/repository
+```
+
+No installation or dependency setup required. The `taxonomy.yaml` resource is bundled next to the binary and resolved automatically at runtime.
+
+### .deb Package (Debian/Ubuntu)
+
+```bash
+sudo dpkg -i ecdat_0.1.0_amd64.deb
+ecdat scan /path/to/repository
+```
+
+The `.deb` installs to `/usr/bin/ecdat` with taxonomy data in `/usr/share/ecdat/` and `/usr/bin/resources/`.
+
+### Building from Source
+
+```bash
+git clone https://github.com/Roshan-Mallick/ECDAT.git
+cd ECDAT
+
+# Self-bootstrapping (fetches all deps from GitHub)
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DECDAT_FETCH_DEPENDENCIES=ON
+cmake --build build -j$(nproc)
+
+# Or system-installed deps (faster, but requires nlohmann-json3-dev, libyaml-cpp-dev, etc.)
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j$(nproc)
+```
+
+### Runtime Requirements
+
+| Requirement | Status |
+|-------------|--------|
+| **C++ standard library** | Required (glibc, libstdc++) |
+| **OpenSSL** (`libcrypto.so.3`) | Required at runtime for certificate scanning |
+| **zlib** (`libz.so.1`) | Required (OpenSSL dependency) |
+| **zstd** (`libzstd.so.1`) | Required (OpenSSL dependency) |
+
+All of these are present on virtually all Linux systems. No manual installation is needed for the pre-built packages.
+
+### Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `ECDAT_TAXONOMY` | Override the taxonomy.yaml path (used by the CLI at runtime) |
+| `NO_COLOR` | Disable colored terminal output (standard: https://no-color.org) |
+
+The taxonomy path is resolved in this priority order:
+1. `ECDAT_TAXONOMY` environment variable (if set and file exists)
+2. `<exe-dir>/resources/taxonomy.yaml` (next to the binary)
+3. `<exe-dir>/../share/ecdat/taxonomy.yaml` (FHS layout)
+4. Legacy development-tree relative paths
+5. `/usr/share/ecdat/taxonomy.yaml` (system install)
+6. `/etc/ecdat/taxonomy.yaml` (fallback)
+
+## 12. CLI
 
 The `ecdat` binary provides five subcommands. All commands accept global flags:
 
@@ -525,7 +602,7 @@ Display version and build information.
 ecdat version
 ```
 
-## 12. Real Repository Workflow
+## 13. Real Repository Workflow
 
 When a user points ECDAT at a real source-code repository:
 
@@ -563,7 +640,7 @@ When a user points ECDAT at a real source-code repository:
 
 Production execution no longer depends on any hard-coded demo assets. All input comes from the user-supplied repository path.
 
-## 13. Member 1 — Discovery Details
+## 14. Member 1 — Discovery Details
 
 ### Source-Code Discovery
 
@@ -586,7 +663,7 @@ Production execution no longer depends on any hard-coded demo assets. All input 
 - **Method**: Scans for weak protocols (`SSLv2`, `SSLv3`, `TLSv1.0`, `TLSv1.1`) and weak ciphers (`RC4`, `DES`, `MD5`, `NULL`)
 - **Output**: `CryptoAsset` with `source_type="tls_config"`, `algorithm`, `file`, `line`, `context`
 
-## 14. Member 2 — Data & Taxonomy Details
+## 15. Member 2 — Data & Taxonomy Details
 
 ### CryptoAsset Contract
 
@@ -632,7 +709,7 @@ Each entry in `taxonomy.yaml`:
 6. Clamp risk_score to [0, 10]
 7. If not found: status = Unknown, risk_score = 0, pqc_flag = false
 
-## 15. Member 3 — Intelligence Details
+## 16. Member 3 — Intelligence Details
 
 ### Risk Scoring
 
@@ -680,7 +757,7 @@ Every finding receives:
 | **Why** | Vulnerability description (deprecated algorithm, weak key, quantum threat) |
 | **Action** | Specific replacement recommendation (e.g., "Replace with ML-DSA (signature)") |
 
-## 16. Member 4 — Platform Details
+## 17. Member 4 — Platform Details
 
 ### CLI
 
@@ -701,7 +778,7 @@ Five subcommands built with CLI11. Full details in Section 11.
 | CSV | Custom generator | RFC 4180 compliant, proper field escaping |
 | PDF | Native C++ PDF 1.4 builder | Multi-page, colored severity cards, headers/footers |
 
-## 17. Data Flow Example
+## 18. Data Flow Example
 
 A single cryptographic asset moving through the pipeline:
 
@@ -748,11 +825,11 @@ Stored in SQLite as scan + finding records.
 Written to JSON/CSV/PDF with full explainability.
 ```
 
-## 18. Example Usage
+## 19. Example Usage
 
 ```bash
-# Build
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+# Quick start: build with self-bootstrapping (fetches all deps automatically)
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DECDAT_FETCH_DEPENDENCIES=ON
 cmake --build build -j$(nproc)
 
 # Scan a real repository
@@ -768,6 +845,10 @@ cmake --build build -j$(nproc)
 
 # Export the latest scan as PDF
 ./build/platform/ecdat export --latest -f pdf -o latest_report.pdf
+
+# Or use the pre-built binary (no build needed)
+tar xzf ECDAT-0.1.0-linux-x86_64.tar.gz
+./ECDAT-0.1.0/bin/ecdat scan /path/to/your/repository
 ```
 
 The CLI output includes:
@@ -777,7 +858,7 @@ The CLI output includes:
 - **PQC readiness**: ready assets, readiness percentage
 - **Findings summary**: per-asset status, risk score, risk level, PQC flag, explanation (Where / Why / Action), PQC replacement when available
 
-## 19. Design Principles
+## 20. Design Principles
 
 - **Modular four-member architecture**: Each member has a single responsibility and can be developed independently
 - **Shared CryptoAsset contract**: One struct defined once, imported by all members — type-safe integration without coupling
@@ -790,7 +871,7 @@ The CLI output includes:
 - **Automated testing**: 120 tests across all members verify correctness at every layer
 - **Graceful degradation**: Member 1 is optional — the system builds and runs without OpenSSL/tree-sitter
 
-## 20. Project Status
+## 21. Project Status
 
 | Component | Status |
 |-----------|--------|
@@ -806,7 +887,7 @@ The CLI output includes:
 
 Passing 120/120 automated tests confirms internal correctness. It does not guarantee that every possible external repository will be scanned without issues. Real-world validation is ongoing.
 
-## 21. Limitations
+## 22. Limitations
 
 - **Source scanning**: Currently limited to Python files (via Tree-sitter). C/C++/Java/Go/Rust source scanning is not yet implemented.
 - **Certificate scanning**: Handles PEM-encoded X.509 certificates. DER-encoded and PKCS#12 formats are not supported.
@@ -815,7 +896,7 @@ Passing 120/120 automated tests confirms internal correctness. It does not guara
 - **Single-threaded scanning**: File discovery and scanning is sequential within a single `ecdat scan` invocation.
 - **Platform**: Tested on Linux (x86_64). Other platforms are not officially supported.
 
-## 22. Contribution & Development
+## 23. Contribution & Development
 
 ECDAT is organized around four member modules:
 
@@ -834,7 +915,7 @@ ECDAT is organized around four member modules:
 - The taxonomy YAML schema is authoritative in `taxonomy/taxonomy/data/taxonomy.yaml`.
 - The risk formula weights (0.4 / 0.3 / 0.3) are specified externally and must not be changed in `risk_engine.cpp`.
 
-## 23. License
+## 24. License
 
 Apache License 2.0. See [LICENSE](LICENSE) for the full text.
 

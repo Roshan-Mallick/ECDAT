@@ -1,0 +1,93 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v0.1.0)'
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build g++ libssl-dev
+
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DECDAT_FETCH_DEPENDENCIES=ON \
+            -DECDAT_BUILD_TESTS=ON
+
+      - name: Build
+        run: cmake --build build -j$(nproc)
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Extract version
+        id: version
+        run: |
+          VERSION=$(grep "project(ecdat" CMakeLists.txt -A1 | grep VERSION | sed 's/.*VERSION //' | tr -d ')')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Package tarball
+        run: |
+          STAGING="ECDAT-${{ steps.version.outputs.version }}-linux-x86_64"
+          mkdir -p "${STAGING}/bin/resources"
+          mkdir -p "${STAGING}/share/ecdat"
+          cp build/platform/ecdat "${STAGING}/bin/ecdat"
+          chmod +x "${STAGING}/bin/ecdat"
+          cp taxonomy/taxonomy/data/taxonomy.yaml "${STAGING}/bin/resources/taxonomy.yaml"
+          cp taxonomy/taxonomy/data/taxonomy.yaml "${STAGING}/share/ecdat/taxonomy.yaml"
+          tar czf "ECDAT-${{ steps.version.outputs.version }}-linux-x86_64.tar.gz" "${STAGING}/"
+
+      - name: Package .deb
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          DEB_DIR="ecdat_${VERSION}_amd64"
+          mkdir -p "${DEB_DIR}/DEBIAN"
+          mkdir -p "${DEB_DIR}/usr/bin/resources"
+          mkdir -p "${DEB_DIR}/usr/share/ecdat"
+          cp build/platform/ecdat "${DEB_DIR}/usr/bin/ecdat"
+          chmod +x "${DEB_DIR}/usr/bin/ecdat"
+          cp taxonomy/taxonomy/data/taxonomy.yaml "${DEB_DIR}/usr/bin/resources/taxonomy.yaml"
+          cp taxonomy/taxonomy/data/taxonomy.yaml "${DEB_DIR}/usr/share/ecdat/taxonomy.yaml"
+          printf 'Package: ecdat\nVersion: %s\nSection: utils\nPriority: optional\nArchitecture: amd64\nDepends: libc6 (>= 2.31), libstdc++6 (>= 12), libssl3 (>= 3.0)\nMaintainer: ECDAT Project Team\nDescription: Enterprise Cryptography Discovery & Assessment Tool\n ECDAT scans source code, certificates, and TLS configurations to\n identify weak cryptographic algorithms, assess risk levels, and\n provide post-quantum cryptography migration guidance.\n' "${VERSION}" > "${DEB_DIR}/DEBIAN/control"
+          chmod 755 "${DEB_DIR}/DEBIAN"
+          dpkg-deb --build "${DEB_DIR}" "ecdat_${VERSION}_amd64.deb"
+
+      - name: Validate tarball
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          VALIDATION_DIR=$(mktemp -d)
+          cd "${VALIDATION_DIR}"
+          tar xzf "${{ github.workspace }}/ECDAT-${VERSION}-linux-x86_64.tar.gz"
+          # Verify binary runs
+          ./ECDAT-${VERSION}/bin/ecdat --version
+          # Verify taxonomy is discoverable from resources/
+          test -f ./ECDAT-${VERSION}/bin/resources/taxonomy.yaml
+          # Scan the source repo itself
+          "${{ github.workspace }}/ECDAT-${VERSION}/bin/ecdat" scan "${{ github.workspace }}"
+          rm -rf "${VALIDATION_DIR}"
+
+      - name: Upload release artifacts
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ECDAT-${{ steps.version.outputs.version }}-linux-x86_64.tar.gz
+            ecdat_${{ steps.version.outputs.version }}_amd64.deb
+          generate_release_notes: true
