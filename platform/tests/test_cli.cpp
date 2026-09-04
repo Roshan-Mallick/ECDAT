@@ -98,8 +98,15 @@ TEST(CliTest, ScanInvalidFormatFails) {
 }
 
 TEST(CliTest, ScanOutputFailureReturnsNonZero) {
-    int rc = run_cli({"scan", get_fixtures_dir(), "--format", "json", "--output", "/non_existent_dir_12345/sub/report.json"});
+    const std::string blocker = "scan_output_blocker";
+    {
+        std::ofstream ofs(blocker);
+        ASSERT_TRUE(ofs.is_open());
+        ofs << "not a directory";
+    }
+    int rc = run_cli({"scan", get_fixtures_dir(), "--format", "json", "--output", blocker + "/report.json"});
     EXPECT_NE(rc, 0);
+    std::filesystem::remove(blocker);
 }
 
 TEST(CliTest, ScanRealFixtureGeneratesAllReports) {

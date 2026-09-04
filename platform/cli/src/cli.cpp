@@ -361,6 +361,7 @@ int CliApp::handle_scan(const CliConfig& config) {
     // Build ScanDetail
     auto scan_detail = store.get_scan(scan_id).value_or(
         reporting::build_scan_detail(config.target_path, all_results, readiness_pct));
+    store.close();
 
     // Console output
     if (!config.quiet) {

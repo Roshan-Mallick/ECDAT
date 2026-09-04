@@ -2,6 +2,9 @@
 #include <openssl/x509.h>
 #include <openssl/pem.h>
 #include <openssl/evp.h>
+#ifdef _WIN32
+#include <openssl/applink.c>
+#endif
 #include <iostream>
 
 std::vector<ecdat::CryptoAsset> scan_certificate(const std::string& filepath) {
