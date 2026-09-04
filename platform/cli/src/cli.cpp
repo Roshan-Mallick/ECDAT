@@ -10,7 +10,7 @@
 #include "tls_scanner.hpp"
 
 #include <CLI/CLI.hpp>
-#include <spdlog/spdlog.h>
+#include <spdlog/fmt/fmt.h>
 #include <nlohmann/json.hpp>
 
 #include <filesystem>
@@ -227,15 +227,6 @@ int CliApp::run(int argc, char** argv) {
         return app.exit(e);
     }
 
-    // Configure logging
-    if (config.verbose) {
-        spdlog::set_level(spdlog::level::debug);
-    } else if (config.quiet) {
-        spdlog::set_level(spdlog::level::warn);
-    } else {
-        spdlog::set_level(spdlog::level::info);
-    }
-
     try {
         if (sub_scan->parsed()) {
             return handle_scan(config);
@@ -252,7 +243,7 @@ int CliApp::run(int argc, char** argv) {
             return 1;
         }
     } catch (const std::exception& ex) {
-        spdlog::error("Error: {}", ex.what());
+        std::cerr << "Error: " << ex.what() << "\n";
         return 1;
     }
 
