@@ -15,13 +15,13 @@ target_compile_features(ecdat_risk PUBLIC cxx_std_17)
 # contract and Classification result. Member 2 owns classification metadata;
 # Member 3 does NOT maintain a second algorithm-metadata source of truth.
 #
-# The dependency on member_2's core/taxonomy targets is declared OPTIONALLY
-# (if TARGET exists) so member_3 can still be configured standalone with
+# The dependency on taxonomy's core/taxonomy targets (Member 2) is declared
+# OPTIONALLY (if TARGET exists) so risk can still be configured standalone with
 # only its own mock fixtures, while the integrated build links the real
-# member_2 libraries.
+# taxonomy libraries (Member 2).
 # ---------------------------------------------------------------------------
-set(ECDAT_MEMBER2_CORE_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/../member_2/core/include")
-set(ECDAT_MEMBER2_TAXONOMY_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/../member_2/taxonomy/include")
+set(ECDAT_MEMBER2_CORE_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/../taxonomy/core/include")
+set(ECDAT_MEMBER2_TAXONOMY_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/../taxonomy/taxonomy/include")
 
 add_library(ecdat_pqc STATIC
     pqc/migration.cpp
@@ -30,14 +30,15 @@ add_library(ecdat_pqc STATIC
 target_include_directories(ecdat_pqc PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/pqc)
-# Include member_2 headers so the shared CryptoAsset/Classification types are
-# always visible regardless of link mode.
+# Include taxonomy headers (Member 2) so the shared CryptoAsset/Classification
+# types are always visible regardless of link mode.
 target_include_directories(ecdat_pqc PUBLIC
     ${ECDAT_MEMBER2_CORE_INCLUDE}
     ${ECDAT_MEMBER2_TAXONOMY_INCLUDE})
 target_compile_features(ecdat_pqc PUBLIC cxx_std_20)
 
-# Link the real member_2 libraries when they are present (integrated build).
+# Link the real taxonomy libraries (Member 2) when they are present (integrated
+# build).
 if(TARGET ecdat_core AND TARGET ecdat_taxonomy)
     target_link_libraries(ecdat_pqc PUBLIC ecdat_core ecdat_taxonomy)
 endif()

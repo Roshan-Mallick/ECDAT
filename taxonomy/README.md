@@ -23,7 +23,7 @@ Status + risk_score + pqc_flag
 ## Layout
 
 ```
-member_2/
+taxonomy/
 ├── CMakeLists.txt
 ├── core/
 │   ├── include/ecdat/{types,serialization}.hpp

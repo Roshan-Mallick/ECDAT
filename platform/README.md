@@ -42,7 +42,7 @@ Member 4 acts strictly as an **orchestration, persistence, reporting, and interf
 ## 2. Directory Layout
 
 ```
-member_4/
+platform/
 ├── CMakeLists.txt
 ├── README.md
 ├── cli/
@@ -134,45 +134,45 @@ CREATE INDEX IF NOT EXISTS idx_scans_timestamp ON scans(timestamp);
 Scans source files (`.py`), certificates (`.pem`), or server configs (`.conf`) across a directory or single file, assesses risks, and saves results to SQLite:
 ```bash
 # Scan a directory
-./build/member_4/ecdat scan ./project
+./build/platform/ecdat scan ./project
 
 # Scan with custom exposure/remediation and auto-generate reports
-./build/member_4/ecdat scan ./project --exposure 80 --remediation 50 --format all -o reports/project_scan
+./build/platform/ecdat scan ./project --exposure 80 --remediation 50 --format all -o reports/project_scan
 ```
 
 ### 2. `ecdat report`
 Generates assessment reports from stored scan records:
 ```bash
 # Output JSON report of latest scan to stdout
-./build/member_4/ecdat report --latest --format json
+./build/platform/ecdat report --latest --format json
 
 # Export PDF report for specific scan ID
-./build/member_4/ecdat report --scan 1 --format pdf -o audit_report.pdf
+./build/platform/ecdat report --scan 1 --format pdf -o audit_report.pdf
 ```
 
 ### 3. `ecdat history`
 Displays a table of previous scans:
 ```bash
-./build/member_4/ecdat history
+./build/platform/ecdat history
 
 # Output as JSON
-./build/member_4/ecdat history --json
+./build/platform/ecdat history --json
 
 # Clear all historical records
-./build/member_4/ecdat history --clear
+./build/platform/ecdat history --clear
 ```
 
 ### 4. `ecdat export`
 Explicit data export:
 ```bash
-./build/member_4/ecdat export --latest --format csv -o findings.csv
-./build/member_4/ecdat export --scan 1 --format pdf -o report.pdf
+./build/platform/ecdat export --latest --format csv -o findings.csv
+./build/platform/ecdat export --scan 1 --format pdf -o report.pdf
 ```
 
 ### 5. `ecdat version`
 Prints version and build details:
 ```bash
-./build/member_4/ecdat version
+./build/platform/ecdat version
 ```
 
 ---

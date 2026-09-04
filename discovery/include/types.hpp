@@ -4,7 +4,7 @@
 // ============================================================
 //
 // The AUTHORITATIVE ECDAT shared contract (CryptoAsset, Status, Finding) is
-// owned by Member 2 in member_2/core/include/ecdat/types.hpp. That is the ONE
+// owned by Member 2 in taxonomy/core/include/ecdat/types.hpp. That is the ONE
 // definition all members compile against (frozen contract).
 //
 // Member 1 previously defined duplicates of ecdat::CryptoAsset, ecdat::Status

@@ -32,7 +32,7 @@ add_library(ecdat_storage STATIC
     storage/src/storage.cpp)
 target_include_directories(ecdat_storage PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/storage/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../member_2/core/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../taxonomy/core/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../integration)
 target_link_libraries(ecdat_storage PUBLIC
     sqlite3_lib
@@ -62,8 +62,8 @@ add_library(ecdat_cli STATIC
 target_include_directories(ecdat_cli PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/cli/include
     ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty
-    ${CMAKE_CURRENT_SOURCE_DIR}/../member_1/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../member_2/taxonomy/include)
+    ${CMAKE_CURRENT_SOURCE_DIR}/../discovery/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../taxonomy/taxonomy/include)
 target_link_libraries(ecdat_cli PUBLIC
     ecdat_reporting
     ecdat_storage
@@ -77,7 +77,7 @@ if(TARGET discovery_lib)
 endif()
 
 target_compile_definitions(ecdat_cli PRIVATE
-    ECDAT_TAXONOMY_PATH="${CMAKE_CURRENT_SOURCE_DIR}/../member_2/taxonomy/data/taxonomy.yaml")
+    ECDAT_TAXONOMY_PATH="${CMAKE_CURRENT_SOURCE_DIR}/../taxonomy/taxonomy/data/taxonomy.yaml")
 target_compile_features(ecdat_cli PUBLIC cxx_std_20)
 
 # ---------------------------------------------------------------------------
@@ -111,7 +111,7 @@ if(BUILD_TESTING AND ECDAT_BUILD_TESTS AND TARGET GTest::gtest_main)
         tests/test_cli.cpp)
     target_link_libraries(ecdat_cli_tests PRIVATE ecdat_cli GTest::gtest_main)
     target_compile_definitions(ecdat_cli_tests PRIVATE
-        M1_FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../member_1/fixtures")
+        M1_FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../discovery/fixtures")
     target_compile_features(ecdat_cli_tests PRIVATE cxx_std_20)
     gtest_discover_tests(ecdat_cli_tests)
 
@@ -121,9 +121,9 @@ if(BUILD_TESTING AND ECDAT_BUILD_TESTS AND TARGET GTest::gtest_main)
             tests/test_integration.cpp)
         target_link_libraries(ecdat_m4_integration_tests PRIVATE ecdat_cli GTest::gtest_main)
         target_compile_definitions(ecdat_m4_integration_tests PRIVATE
-            ECDAT_TAXONOMY_PATH="${CMAKE_CURRENT_SOURCE_DIR}/../member_2/taxonomy/data/taxonomy.yaml"
-            M1_FIXTURE_PY="${CMAKE_CURRENT_SOURCE_DIR}/../member_1/fixtures/sample.py"
-            M1_FIXTURE_TLS="${CMAKE_CURRENT_SOURCE_DIR}/../member_1/fixtures/sample_nginx.conf")
+            ECDAT_TAXONOMY_PATH="${CMAKE_CURRENT_SOURCE_DIR}/../taxonomy/taxonomy/data/taxonomy.yaml"
+            M1_FIXTURE_PY="${CMAKE_CURRENT_SOURCE_DIR}/../discovery/fixtures/sample.py"
+            M1_FIXTURE_TLS="${CMAKE_CURRENT_SOURCE_DIR}/../discovery/fixtures/sample_nginx.conf")
         target_compile_features(ecdat_m4_integration_tests PRIVATE cxx_std_20)
         gtest_discover_tests(ecdat_m4_integration_tests)
     endif()

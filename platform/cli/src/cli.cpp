@@ -22,7 +22,7 @@
 #include <unistd.h>
 
 #ifndef ECDAT_TAXONOMY_PATH
-#define ECDAT_TAXONOMY_PATH "member_2/taxonomy/data/taxonomy.yaml"
+#define ECDAT_TAXONOMY_PATH "taxonomy/taxonomy/data/taxonomy.yaml"
 #endif
 
 namespace ecdat::cli {
@@ -71,9 +71,9 @@ private:
 std::string find_taxonomy_path() {
     std::vector<std::string> candidates = {
         ECDAT_TAXONOMY_PATH,
-        "member_2/taxonomy/data/taxonomy.yaml",
-        "../member_2/taxonomy/data/taxonomy.yaml",
-        "../../member_2/taxonomy/data/taxonomy.yaml",
+        "taxonomy/taxonomy/data/taxonomy.yaml",
+        "../taxonomy/taxonomy/data/taxonomy.yaml",
+        "../../taxonomy/taxonomy/data/taxonomy.yaml",
         "/etc/ecdat/taxonomy.yaml"
     };
     for (const auto& path : candidates) {

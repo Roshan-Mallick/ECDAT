@@ -11,13 +11,13 @@
 #include <string>
 
 #ifndef ECDAT_TAXONOMY_PATH
-#define ECDAT_TAXONOMY_PATH "member_2/taxonomy/data/taxonomy.yaml"
+#define ECDAT_TAXONOMY_PATH "taxonomy/taxonomy/data/taxonomy.yaml"
 #endif
 #ifndef M1_FIXTURE_PY
-#define M1_FIXTURE_PY "member_1/fixtures/sample.py"
+#define M1_FIXTURE_PY "discovery/fixtures/sample.py"
 #endif
 #ifndef M1_FIXTURE_TLS
-#define M1_FIXTURE_TLS "member_1/fixtures/sample_nginx.conf"
+#define M1_FIXTURE_TLS "discovery/fixtures/sample_nginx.conf"
 #endif
 
 namespace ecdat {

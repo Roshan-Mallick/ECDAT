@@ -10,7 +10,7 @@
 
 namespace ecdat::cli {
 #ifndef M1_FIXTURES_DIR
-#define M1_FIXTURES_DIR "member_1/fixtures"
+#define M1_FIXTURES_DIR "discovery/fixtures"
 #endif
 
 namespace {
@@ -18,9 +18,9 @@ namespace {
 std::string get_fixtures_dir() {
     std::vector<std::string> candidates = {
         M1_FIXTURES_DIR,
-        "member_1/fixtures",
-        "../../member_1/fixtures",
-        "../member_1/fixtures"
+        "discovery/fixtures",
+        "../../discovery/fixtures",
+        "../discovery/fixtures"
     };
     for (const auto& c : candidates) {
         if (std::filesystem::exists(c)) return c;

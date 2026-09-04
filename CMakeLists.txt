@@ -41,15 +41,15 @@ include(CTest)
 # ---------------------------------------------------------------------------
 # Member modules (each subdirectory defines its own libraries/tests)
 # ---------------------------------------------------------------------------
-add_subdirectory(member_2)
-add_subdirectory(member_3)
+add_subdirectory(taxonomy)
+add_subdirectory(risk)
 
 # Member 1 (discovery) is optional: it needs OpenSSL + tree-sitter. Only wire
 # it (and the Member1 -> 2 -> 3 flow) into the build when those are available,
 # so a minimal build without the discovery dependency still works.
 find_package(OpenSSL QUIET)
 if(OpenSSL_FOUND)
-    add_subdirectory(member_1)
+    add_subdirectory(discovery)
 endif()
 
 # ---------------------------------------------------------------------------
@@ -66,10 +66,10 @@ add_library(ecdat_pipeline STATIC
     integration/pipeline.cpp)
 target_include_directories(ecdat_pipeline PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/integration
-    ${CMAKE_CURRENT_SOURCE_DIR}/member_2/core/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/member_2/taxonomy/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/member_3
-    ${CMAKE_CURRENT_SOURCE_DIR}/member_3/pqc)
+    ${CMAKE_CURRENT_SOURCE_DIR}/taxonomy/core/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/taxonomy/taxonomy/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/risk
+    ${CMAKE_CURRENT_SOURCE_DIR}/risk/pqc)
 target_link_libraries(ecdat_pipeline
     PUBLIC ecdat_taxonomy ecdat_risk ecdat_pqc)
 target_compile_features(ecdat_pipeline PUBLIC cxx_std_20)
@@ -82,17 +82,17 @@ if(TARGET discovery_lib)
         integration/flow.cpp)
     target_include_directories(ecdat_flow PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/integration
-        ${CMAKE_CURRENT_SOURCE_DIR}/member_1/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/member_2/core/include)
+        ${CMAKE_CURRENT_SOURCE_DIR}/discovery/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/taxonomy/core/include)
     target_link_libraries(ecdat_flow PUBLIC discovery_lib ecdat_pipeline)
     target_compile_features(ecdat_flow PUBLIC cxx_std_20)
 endif()
 
 # ---------------------------------------------------------------------------
 # Member 4 - Platform / CLI / Storage / Reporting
-# Must come after member_2, member_3, integration pipeline, and optionally flow.
+# Must come after taxonomy, risk, integration pipeline, and optionally flow.
 # ---------------------------------------------------------------------------
-add_subdirectory(member_4)
+add_subdirectory(platform)
 
 # ---------------------------------------------------------------------------
 # Integration tests & demo (only when building with tests)
@@ -114,9 +114,9 @@ if(BUILD_TESTING AND ECDAT_BUILD_TESTS)
             integration/test_flow.cpp)
         target_link_libraries(ecdat_flow_tests PRIVATE ecdat_flow GTest::gtest_main)
         target_compile_definitions(ecdat_flow_tests PRIVATE
-            ECDAT_TAXONOMY_PATH="${CMAKE_CURRENT_SOURCE_DIR}/member_2/taxonomy/data/taxonomy.yaml"
-            M1_FIXTURE_PY="${CMAKE_CURRENT_SOURCE_DIR}/member_1/fixtures/sample.py"
-            M1_FIXTURE_TLS="${CMAKE_CURRENT_SOURCE_DIR}/member_1/fixtures/sample_nginx.conf")
+            ECDAT_TAXONOMY_PATH="${CMAKE_CURRENT_SOURCE_DIR}/taxonomy/taxonomy/data/taxonomy.yaml"
+            M1_FIXTURE_PY="${CMAKE_CURRENT_SOURCE_DIR}/discovery/fixtures/sample.py"
+            M1_FIXTURE_TLS="${CMAKE_CURRENT_SOURCE_DIR}/discovery/fixtures/sample_nginx.conf")
         target_compile_features(ecdat_flow_tests PRIVATE cxx_std_20)
         gtest_discover_tests(ecdat_flow_tests)
     endif()

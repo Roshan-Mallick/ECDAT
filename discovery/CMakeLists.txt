@@ -51,7 +51,7 @@ add_library(discovery_lib
 target_include_directories(discovery_lib PUBLIC include)
 # Make the authoritative Member 2 contract header reachable.
 target_include_directories(discovery_lib PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/../member_2/core/include)
+    ${CMAKE_CURRENT_SOURCE_DIR}/../taxonomy/core/include)
 target_include_directories(discovery_lib PUBLIC ${TREE_SITTER_INCLUDE_DIR})
 target_link_libraries(discovery_lib PUBLIC OpenSSL::SSL OpenSSL::Crypto
     ${TREE_SITTER_PY_LIB} ${TREE_SITTER_LIB} ${TREE_SITTER_PY_LIB})
