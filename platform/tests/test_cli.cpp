@@ -142,6 +142,9 @@ TEST(CliTest, ScanRealFixtureGeneratesAllReports) {
     EXPECT_EQ(pdf_str.substr(0, 5), "%PDF-");
     EXPECT_NE(pdf_str.find("%%EOF"), std::string::npos);
 
+    jf.close();
+    cf.close();
+    pf.close();
     std::filesystem::remove_all(temp_dir);
 }
 
