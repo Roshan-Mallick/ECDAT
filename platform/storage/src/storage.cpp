@@ -697,7 +697,11 @@ std::string Storage::current_timestamp() {
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
 
     std::tm tm_buf{};
+#ifdef _WIN32
+    gmtime_s(&tm_buf, &in_time_t);
+#else
     gmtime_r(&in_time_t, &tm_buf);
+#endif
 
     std::ostringstream oss;
     oss << std::put_time(&tm_buf, "%Y-%m-%d %H:%M:%SZ");

@@ -79,9 +79,9 @@ jobs:
           VALIDATION_DIR=$(mktemp -d)
           cd "${VALIDATION_DIR}"
           tar xzf "${{ github.workspace }}/ECDAT-${VERSION}-linux-x86_64.tar.gz"
-          ./ECDAT-${VERSION}/bin/ecdat --version
-          test -f ./ECDAT-${VERSION}/bin/resources/taxonomy.yaml
-          ./ECDAT-${VERSION}/bin/ecdat scan "${{ github.workspace }}"
+          ./ECDAT-${VERSION}-linux-x86_64/bin/ecdat --version
+          test -f ./ECDAT-${VERSION}-linux-x86_64/bin/resources/taxonomy.yaml
+          ./ECDAT-${VERSION}-linux-x86_64/bin/ecdat scan "${{ github.workspace }}"
           rm -rf "${VALIDATION_DIR}"
 
       - name: Upload artifacts
@@ -143,9 +143,9 @@ jobs:
           VALIDATION_DIR=$(mktemp -d)
           cd "${VALIDATION_DIR}"
           tar xzf "${{ github.workspace }}/ECDAT-${VERSION}-macos-${ARCH}.tar.gz"
-          ./ECDAT-${VERSION}/bin/ecdat --version
-          test -f ./ECDAT-${VERSION}/bin/resources/taxonomy.yaml
-          ./ECDAT-${VERSION}/bin/ecdat scan "${{ github.workspace }}"
+          ./ECDAT-${VERSION}-macos-${ARCH}/bin/ecdat --version
+          test -f ./ECDAT-${VERSION}-macos-${ARCH}/bin/resources/taxonomy.yaml
+          ./ECDAT-${VERSION}-macos-${ARCH}/bin/ecdat scan "${{ github.workspace }}"
           rm -rf "${VALIDATION_DIR}"
 
       - name: Upload artifacts

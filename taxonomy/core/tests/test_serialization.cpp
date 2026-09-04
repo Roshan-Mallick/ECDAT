@@ -57,7 +57,7 @@ TEST(Serialization, EveryStatusSerializesAsString) {
         a.status = status;
         const auto json = to_json(a);
         EXPECT_TRUE(json["status"].is_string()) << "status must serialize as string";
-        EXPECT_EQ(json["status"], status_to_string(status));
+        EXPECT_EQ(json["status"].get<std::string>(), status_to_string(status));
     }
 }
 
