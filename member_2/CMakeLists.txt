@@ -168,13 +168,3 @@ if(BUILD_TESTING AND ECDAT_BUILD_TESTS)
     gtest_discover_tests(ecdat_taxonomy_tests)
     gtest_discover_tests(ecdat_classifier_tests)
 endif()
-
-# ---------------------------------------------------------------------------
-# Demo
-# ---------------------------------------------------------------------------
-add_executable(ecdat_demo demo/demo_main.cpp)
-target_link_libraries(ecdat_demo PRIVATE ecdat_taxonomy)
-target_compile_definitions(ecdat_demo PRIVATE
-    ECDAT_TAXONOMY_PATH="${ECDAT_TAXONOMY_PATH}"
-    DEMO_OUTPUT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/temp_out")
-target_compile_features(ecdat_demo PRIVATE cxx_std_20)

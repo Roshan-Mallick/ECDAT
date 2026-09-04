@@ -108,16 +108,7 @@ if(BUILD_TESTING AND ECDAT_BUILD_TESTS)
     target_compile_features(ecdat_integration_tests PRIVATE cxx_std_20)
     gtest_discover_tests(ecdat_integration_tests)
 
-    # Combined demo (member_2 demo + member_3 risk engine)
-    add_executable(ecdat_combined_demo
-        integration/combined_demo.cpp)
-    target_link_libraries(ecdat_combined_demo PRIVATE ecdat_pipeline)
-    target_compile_definitions(ecdat_combined_demo PRIVATE
-        ECDAT_TAXONOMY_PATH="${CMAKE_CURRENT_SOURCE_DIR}/member_2/taxonomy/data/taxonomy.yaml"
-        DEMO_OUTPUT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/member_2/temp_out")
-    target_compile_features(ecdat_combined_demo PRIVATE cxx_std_20)
-
-    # Full Member 1 -> Member 2 -> Member 3 flow test + demo (when Member 1 present)
+    # Full Member 1 -> Member 2 -> Member 3 flow test (when Member 1 present)
     if(TARGET ecdat_flow)
         add_executable(ecdat_flow_tests
             integration/test_flow.cpp)
@@ -128,14 +119,5 @@ if(BUILD_TESTING AND ECDAT_BUILD_TESTS)
             M1_FIXTURE_TLS="${CMAKE_CURRENT_SOURCE_DIR}/member_1/fixtures/sample_nginx.conf")
         target_compile_features(ecdat_flow_tests PRIVATE cxx_std_20)
         gtest_discover_tests(ecdat_flow_tests)
-
-        add_executable(ecdat_discovery_driver
-            integration/flow_driver.cpp)
-        target_link_libraries(ecdat_discovery_driver PRIVATE ecdat_flow)
-        target_compile_definitions(ecdat_discovery_driver PRIVATE
-            ECDAT_TAXONOMY_PATH="${CMAKE_CURRENT_SOURCE_DIR}/member_2/taxonomy/data/taxonomy.yaml"
-            M1_FIXTURE_PY="${CMAKE_CURRENT_SOURCE_DIR}/member_1/fixtures/sample.py"
-            M1_FIXTURE_TLS="${CMAKE_CURRENT_SOURCE_DIR}/member_1/fixtures/sample_nginx.conf")
-        target_compile_features(ecdat_discovery_driver PRIVATE cxx_std_20)
     endif()
 endif()
