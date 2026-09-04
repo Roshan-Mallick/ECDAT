@@ -326,11 +326,30 @@ nlohmann/json, yaml-cpp, GoogleTest, tree-sitter, and tree-sitter-python are **a
 
 ## 8. Requirements
 
-- **Compiler**: GCC 10+ or Clang 12+ with C++20 support
+ECDAT has two very different requirement profiles depending on whether you are an **end user** running a released binary or a **developer** building from source. A released binary user does **not** need any development toolchain.
+
+### End User (running a released binary)
+
+| Operating System | Requirements |
+|------------------|--------------|
+| Linux | Standard shared libraries present on virtually all distributions (glibc, libstdc++, OpenSSL `libcrypto`, zlib, zstd). No development packages needed. |
+| macOS | Standard system libraries (via bundled/OpenSSL runtime). No development packages needed. |
+| Windows | Standard system DLLs. OpenSSL DLLs are bundled with the archive if required. No development packages needed. |
+
+In particular, a normal end user does **not** need to install:
+- CMake
+- GCC / Clang / MSVC
+- tree-sitter
+- yaml-cpp
+- nlohmann/json
+
+### Developer (building from source)
+
+- **Compiler**: GCC 10+ or Clang 12+ with C++20 support (Linux/macOS), or MSVC (Windows)
 - **CMake**: 3.21 or newer
-- **Build tool**: Ninja or Make
+- **Build tool**: Ninja, Make, or Visual Studio
 - **OpenSSL**: Development libraries (for Member 1 — optional, gracefully skipped if absent)
-- **tree-sitter** + **tree-sitter-python**: Shared libraries (for Member 1 — optional; can be vendored via FetchContent)
+- **tree-sitter** + **tree-sitter-python**: can be vendored automatically via FetchContent (no manual install needed)
 
 Member 2, Member 3, integration, and Member 4 build without external system dependencies — nlohmann/json, yaml-cpp, GoogleTest, tree-sitter, and tree-sitter-python are all fetched automatically via CMake FetchContent when `-DECDAT_FETCH_DEPENDENCIES=ON` is passed and the system packages are not found.
 
@@ -413,35 +432,100 @@ cmake --build build-asan -j$(nproc)
 ctest --test-dir build-asan --output-on-failure
 ```
 
+### Cross-Platform Build & Validation
+
+ECDAT is built and validated automatically on native GitHub Actions runners for all three platforms. The release workflow runs the full 120-test suite and the packaged validation (binary runs, taxonomy.yaml resolves, real repository scan) on each platform independently; the release only publishes artifacts whose platform build passed.
+
+| Platform | Runner | Native Architecture | Release Artifact |
+|----------|--------|--------------------|------------------|
+| Linux | `ubuntu-24.04` | x86_64 | `.tar.gz` + `.deb` |
+| macOS | `macos-14` | arm64 / x86_64 | `.tar.gz` |
+| Windows | `windows-2022` | x86_64 | `.zip` |
+
+Each artifact is validated in a clean environment before publication: `ecdat version` runs, `taxonomy.yaml` resolves from the bundled resources, and a real repository scan completes.
+
 ## 11. Installation / Distribution
 
-### Pre-built Tarball
+ECDAT ships pre-built binaries for Linux, macOS, and Windows. Every release artifact is self-contained: the `taxonomy.yaml` resource is bundled next to the executable and resolved automatically at runtime, so **normal users do not need to install any development dependencies** (CMake, compilers, tree-sitter, yaml-cpp, nlohmann/json, etc.).
 
-Download the `ECDAT-0.1.0-linux-x86_64.tar.gz` release archive, extract, and run:
+Select the section for your operating system.
 
-```bash
-tar xzf ECDAT-0.1.0-linux-x86_64.tar.gz
-./ECDAT-0.1.0/bin/ecdat scan /path/to/repository
-```
+### Linux
 
-No installation or dependency setup required. The `taxonomy.yaml` resource is bundled next to the binary and resolved automatically at runtime.
-
-### .deb Package (Debian/Ubuntu)
+#### Debian / Ubuntu (`.deb`)
 
 ```bash
 sudo dpkg -i ecdat_0.1.0_amd64.deb
-ecdat scan /path/to/repository
 ```
 
-The `.deb` installs to `/usr/bin/ecdat` with taxonomy data in `/usr/share/ecdat/` and `/usr/bin/resources/`.
+This installs the `ecdat` executable to `/usr/bin/ecdat` and taxonomy data to `/usr/share/ecdat/` and `/usr/bin/resources/`.
 
-### Building from Source
+Verify and scan:
+
+```bash
+ecdat version
+ecdat scan /path/to/project
+```
+
+#### Linux Portable Tarball (`tar.gz`)
+
+```bash
+tar -xzf ECDAT-0.1.0-linux-x86_64.tar.gz
+cd ECDAT-0.1.0
+./bin/ecdat version
+./bin/ecdat scan /path/to/project
+```
+
+No installation required — extract anywhere and run.
+
+### macOS
+
+ECDAT is built natively on GitHub Actions `macos-14` runners using the project's own CMake configuration. The `.tar.gz` archive bundles the executable and required runtime resources.
+
+#### Apple Silicon (arm64)
+
+```bash
+# 1. Download ECDAT-0.1.0-macos-arm64.tar.gz
+# 2. Extract
+tar -xzf ECDAT-0.1.0-macos-arm64.tar.gz
+cd ECDAT-0.1.0
+
+# 3. Verify
+./bin/ecdat version
+
+# 4. Scan a project
+./bin/ecdat scan /path/to/project
+```
+
+The v0.1.0 workflow produces an Apple Silicon artifact only. An Intel
+(`x86_64`) macOS artifact is not published by this workflow.
+
+**Note:** If your macOS shows "cannot be opened because the developer cannot be verified", right-click the executable in Finder and select **Open**, or run `xattr -d com.apple.quarantine ./bin/ecdat` once before executing. This is because the binaries are not notarized by Apple in this early release.
+
+### Windows
+
+```powershell
+# 1. Download ECDAT-0.1.0-windows-x86_64.zip
+# 2. Extract the ZIP
+# 3. Open PowerShell
+cd path\to\extracted\ECDAT-0.1.0\bin
+
+# 4. Verify version
+.\ecdat.exe version
+
+# 5. Scan a project
+.\ecdat.exe scan "C:\path\to\project"
+```
+
+The required DLLs (e.g. OpenSSL `libssl`/`libcrypto`) are bundled alongside `ecdat.exe` when needed — **you do not need to install them manually**.
+
+### Building from Source (Developer)
 
 ```bash
 git clone https://github.com/Roshan-Mallick/ECDAT.git
 cd ECDAT
 
-# Self-bootstrapping (fetches all deps from GitHub)
+# Self-bootstrapping (fetches all C++ deps from GitHub)
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DECDAT_FETCH_DEPENDENCIES=ON
 cmake --build build -j$(nproc)
 
@@ -449,17 +533,6 @@ cmake --build build -j$(nproc)
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j$(nproc)
 ```
-
-### Runtime Requirements
-
-| Requirement | Status |
-|-------------|--------|
-| **C++ standard library** | Required (glibc, libstdc++) |
-| **OpenSSL** (`libcrypto.so.3`) | Required at runtime for certificate scanning |
-| **zlib** (`libz.so.1`) | Required (OpenSSL dependency) |
-| **zstd** (`libzstd.so.1`) | Required (OpenSSL dependency) |
-
-All of these are present on virtually all Linux systems. No manual installation is needed for the pre-built packages.
 
 ### Environment Variables
 
@@ -601,6 +674,44 @@ Display version and build information.
 ```bash
 ecdat version
 ```
+
+### Complete Example Workflow
+
+The following walks through a typical ECDAT session from installation to report export. All commands are real and match the CLI exactly.
+
+```bash
+# 1. Install ECDAT (Linux .deb example)
+sudo dpkg -i ecdat_0.1.0_amd64.deb
+
+# 2. Verify installation
+ecdat version
+
+# 3. Scan a repository
+ecdat scan /path/to/your/repository
+
+# 4. Review findings
+#    (findings summary is printed to the terminal: status, risk score,
+#     risk level, PQC flag, and What/Where/Why/Action for each asset)
+
+# 5. Generate a report from the latest scan
+ecdat report --latest
+ecdat report --latest -f all -o assessment
+
+# 6. Export results to a specific file
+ecdat export --latest -f pdf -o findings.pdf
+ecdat export --latest -f csv -o findings.csv
+ecdat export --latest -f json -o findings.json
+
+# 7. View scan history
+ecdat history
+```
+
+A typical scan produces:
+
+- **Discovery summary** — files scanned per category (source, certificate, TLS configs) and total assets discovered
+- **Assessment & risk breakdown** — Safe / Weak / Deprecated / Unknown counts plus CRITICAL / HIGH / MEDIUM / LOW risk tier counts
+- **Post-quantum readiness** — ready asset count and readiness percentage
+- **Findings summary** — per-asset status, risk score (0–10), risk level, PQC flag, and an explainable What / Where / Why / Action with the PQC replacement when available
 
 ## 13. Real Repository Workflow
 

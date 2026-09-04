@@ -20,7 +20,20 @@
 #include <iomanip>
 #include <sstream>
 #include <cstdlib>
+
+#ifdef _WIN32
+#include <io.h>
+#include <windows.h>
+#else
 #include <unistd.h>
+#ifndef __APPLE__
+#include <linux/limits.h>
+#endif
+#endif
+
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
 
 #ifndef ECDAT_TAXONOMY_PATH
 #define ECDAT_TAXONOMY_PATH "taxonomy/taxonomy/data/taxonomy.yaml"
@@ -33,7 +46,7 @@ namespace {
 // Terminal color helpers respecting --no-color and non-tty
 class TermColor {
 public:
-    explicit TermColor(bool disable) : disable_(disable || is_no_color_env() || !isatty(fileno(stdout))) {}
+    explicit TermColor(bool disable) : disable_(disable || is_no_color_env() || !is_tty()) {}
 
     std::string bold(const std::string& s) const { return disable_ ? s : "\033[1m" + s + "\033[0m"; }
     std::string red(const std::string& s) const { return disable_ ? s : "\033[1;31m" + s + "\033[0m"; }
@@ -67,6 +80,14 @@ private:
     static bool is_no_color_env() {
         return std::getenv("NO_COLOR") != nullptr;
     }
+
+    static bool is_tty() {
+#ifdef _WIN32
+        return _isatty(_fileno(stdout)) != 0;
+#else
+        return isatty(fileno(stdout)) != 0;
+#endif
+    }
 };
 
 std::string find_taxonomy_path() {
@@ -81,11 +102,32 @@ std::string find_taxonomy_path() {
 
     // Paths relative to the running executable so ECDAT works from any working
     // directory. Works for an unpacked tarball, a system install, or a dev tree.
-    const auto exe_abs = std::filesystem::absolute(std::filesystem::path("/proc/self/exe"));
-    std::string exe_dir = exe_abs.parent_path().string();
-    candidates.push_back(exe_dir + "/resources/taxonomy.yaml");
-    candidates.push_back(exe_dir + "/../share/ecdat/taxonomy.yaml");
-    candidates.push_back(exe_dir + "/../resources/taxonomy.yaml");
+    std::string exe_dir;
+#ifdef _WIN32
+    char buf[MAX_PATH];
+    DWORD len = GetModuleFileNameA(nullptr, buf, MAX_PATH);
+    if (len > 0 && len < MAX_PATH) {
+        exe_dir = std::filesystem::path(buf).parent_path().string();
+    }
+#elif defined(__APPLE__)
+    char buf[1024];
+    uint32_t size = sizeof(buf);
+    if (_NSGetExecutablePath(buf, &size) == 0) {
+        exe_dir = std::filesystem::absolute(buf).parent_path().string();
+    }
+#else
+    char buf[PATH_MAX];
+    ssize_t len = readlink("/proc/self/exe", buf, sizeof(buf) - 1);
+    if (len > 0) {
+        buf[len] = '\0';
+        exe_dir = std::filesystem::path(buf).parent_path().string();
+    }
+#endif
+    if (!exe_dir.empty()) {
+        candidates.push_back(exe_dir + "/resources/taxonomy.yaml");
+        candidates.push_back(exe_dir + "/../share/ecdat/taxonomy.yaml");
+        candidates.push_back(exe_dir + "/../resources/taxonomy.yaml");
+    }
 
     // Legacy / development-tree relative paths.
     candidates.push_back(ECDAT_TAXONOMY_PATH);

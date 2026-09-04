@@ -32,8 +32,6 @@ if(NOT TREE_SITTER_LIB OR NOT TREE_SITTER_PY_LIB OR NOT TREE_SITTER_INCLUDE_DIR)
     if(ECDAT_FETCH_DEPENDENCIES)
         include(FetchContent)
         set(BUILD_SHARED_LIBS OFF CACHE BOOL "build tree-sitter static for ECDAT" FORCE)
-        set(TREE_SITTER_CLI "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/tree-sitter-noop.sh"
-            CACHE FILEPATH "no-op tree-sitter CLI for vendored tree-sitter-python" FORCE)
         FetchContent_Declare(
             tree_sitter
             GIT_REPOSITORY https://github.com/tree-sitter/tree-sitter.git
@@ -42,7 +40,29 @@ if(NOT TREE_SITTER_LIB OR NOT TREE_SITTER_PY_LIB OR NOT TREE_SITTER_INCLUDE_DIR)
             tree_sitter_python
             GIT_REPOSITORY https://github.com/tree-sitter/tree-sitter-python.git
             GIT_TAG 26855eabccb19c6abf499fbc5b8dc7cc9ab8bc64)
-        FetchContent_MakeAvailable(tree_sitter tree_sitter_python)
+
+        # Populate both, then patch tree-sitter-python's CMakeLists BEFORE
+        # add_subdirectory so its custom_command (which would try to invoke a
+        # missing `tree-sitter` CLI) never gets into the generated build. This
+        # is required on Windows where no POSIX noop wrapper exists, and means
+        # the pre-generated parser.c from the pinned commit is used as-is.
+        FetchContent_GetProperties(tree_sitter)
+        if(NOT tree_sitter_POPULATED)
+            FetchContent_Populate(tree_sitter)
+            add_subdirectory("${tree_sitter_SOURCE_DIR}" "${tree_sitter_BINARY_DIR}")
+        endif()
+
+        FetchContent_GetProperties(tree_sitter_python)
+        if(NOT tree_sitter_python_POPULATED)
+            FetchContent_Populate(tree_sitter_python)
+            file(READ "${tree_sitter_python_SOURCE_DIR}/CMakeLists.txt" _ts_py_cmakelists)
+            string(REGEX REPLACE
+                "add_custom_command\\(OUTPUT[^\\)]*parser\\.c\"[^)]*\\)"
+                "# ECDAT: regeneration suppressed — using pre-generated parser.c"
+                _ts_py_cmakelists "${_ts_py_cmakelists}")
+            file(WRITE "${tree_sitter_python_SOURCE_DIR}/CMakeLists.txt" "${_ts_py_cmakelists}")
+            add_subdirectory("${tree_sitter_python_SOURCE_DIR}" "${tree_sitter_python_BINARY_DIR}")
+        endif()
         if(TARGET tree-sitter AND TARGET tree-sitter-python)
             set(TREE_SITTER_LIB tree-sitter)
             set(TREE_SITTER_PY_LIB tree-sitter-python)
