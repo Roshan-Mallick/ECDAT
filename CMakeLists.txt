@@ -89,6 +89,12 @@ if(TARGET discovery_lib)
 endif()
 
 # ---------------------------------------------------------------------------
+# Member 4 - Platform / CLI / Storage / Reporting
+# Must come after member_2, member_3, integration pipeline, and optionally flow.
+# ---------------------------------------------------------------------------
+add_subdirectory(member_4)
+
+# ---------------------------------------------------------------------------
 # Integration tests & demo (only when building with tests)
 # ---------------------------------------------------------------------------
 include(GoogleTest)

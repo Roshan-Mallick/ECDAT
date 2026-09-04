@@ -31,6 +31,10 @@ namespace ecdat {
 
 // Complete result of running an asset through the full pipeline.
 struct PipelineResult {
+    // The original CryptoAsset that was fed into the pipeline, preserved so
+    // downstream layers (storage, reporting, CLI) can access discovery fields.
+    CryptoAsset asset;
+
     // From Member 2 classification
     const TaxonomyEntry* taxonomy_entry = nullptr;
     Status               status        = Status::Unknown;

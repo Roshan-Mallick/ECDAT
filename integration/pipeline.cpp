@@ -19,6 +19,9 @@ PipelineResult run_pipeline(const CryptoAsset& asset,
                             double remediation) {
     PipelineResult result;
 
+    // Preserve the original discovery asset for downstream consumers.
+    result.asset = asset;
+
     // --- Stage 1: Member 2 classification (authoritative taxonomy) ---------
     Classification c = classify_asset(asset, db);
     result.taxonomy_entry = c.entry;
