@@ -11,8 +11,6 @@
 
 #include <CLI/CLI.hpp>
 #include <spdlog/spdlog.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
-#include <spdlog/fmt/fmt.h>
 #include <nlohmann/json.hpp>
 
 #include <filesystem>
