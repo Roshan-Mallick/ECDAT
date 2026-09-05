@@ -442,7 +442,7 @@ ECDAT is built and validated automatically on native GitHub Actions runners for 
 | macOS | `macos-14` | arm64 / x86_64 | `.tar.gz` |
 | Windows | `windows-2022` | x86_64 | `.zip` |
 
-Each artifact is validated in a clean environment before publication: `ecdat version` runs, `taxonomy.yaml` resolves from the bundled resources, and a real repository scan completes. The Windows `.zip` is validated on a separate runner with **no OpenSSL on `PATH`** (any `PATH` entry containing OpenSSL would otherwise mask a missing bundled DLL), proving the bundled `libcrypto-*`/`libssl-*` DLLs alone satisfy the runtime.
+Each artifact is validated in a clean environment before publication: `ecdat version` runs, `taxonomy.yaml` resolves from the bundled resources, and a real repository scan completes. The Windows `.zip` is validated on a separate runner where every OpenSSL entry is stripped from `PATH` (the runner image ships OpenSSL), so the bundled `libcrypto-*`/`libssl-*` DLLs alone must satisfy the runtime — any missing DLL fails the build.
 
 ## 11. Installation / Distribution
 

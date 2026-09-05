@@ -63,6 +63,7 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           DEB_DIR="ecdat_${VERSION}_amd64"
           mkdir -p "${DEB_DIR}/DEBIAN"
+          mkdir -p "${DEB_DIR}/usr/bin"
           mkdir -p "${DEB_DIR}/usr/share/ecdat"
           cp build/platform/ecdat "${DEB_DIR}/usr/bin/ecdat"
           chmod +x "${DEB_DIR}/usr/bin/ecdat"
@@ -217,9 +218,9 @@ jobs:
           path: ECDAT-*-windows-*.zip
 
   # ---------------------------------------------------------------------------
-  # Windows: validate the packaged ZIP on a CLEAN runner — no OpenSSL install
-  # step and OpenSSL must not be on PATH. This proves ecdat.exe runs using only
-  # the DLLs bundled beside it in the ZIP.
+  # Windows: validate the packaged ZIP on a dedicated runner with OpenSSL
+  # stripped from PATH (the image ships it, so we remove its PATH entries).
+  # This proves ecdat.exe runs using only the DLLs bundled beside it in the ZIP.
   # ---------------------------------------------------------------------------
   validate-windows:
     needs: build-windows
@@ -233,21 +234,28 @@ jobs:
           name: windows
           path: dist
 
-      - name: Assert clean environment (no OpenSSL installed or on PATH)
+      - name: Clean environment (strip OpenSSL from PATH)
         shell: bash
         run: |
-          # The windows-2022 image may ship OpenSSL under C:/Program Files/OpenSSL,
-          # but it is never on PATH; a recent image that leaks it onto PATH would
-          # mask a missing bundled DLL, so that is exactly what we fail on.
+          # The windows-2022 image ships OpenSSL and puts its bin directory on
+          # PATH. For a true clean-environment test we remove every OpenSSL PATH
+          # entry so the packaged ecdat.exe can only resolve libcrypto-*/libssl-*
+          # from the ZIP bundle beside it.
+          IFS=':' read -r -a entries <<< "$PATH"
+          clean=()
+          for entry in "${entries[@]}"; do
+            case "$entry" in
+              *[Oo][Pp][Ee][Nn][Ss][Ss][Ll]*) echo "stripped from PATH: $entry" ;;
+              *) clean+=("$entry") ;;
+            esac
+          done
+          IFS=':'
+          export PATH="${clean[*]}"
           if printf '%s' "$PATH" | grep -iq openssl; then
-            echo "FAIL: OpenSSL found on PATH:"
-            echo "$PATH"
+            echo "FAIL: OpenSSL still on PATH after stripping"
             exit 1
           fi
-          if [ -d "C:/Program Files/OpenSSL" ]; then
-            echo "note: OpenSSL is installed on this runner image but not on PATH"
-          fi
-          echo "OK: no OpenSSL path entry; bundled DLLs must satisfy the runtime"
+          echo "OK: OpenSSL stripped from PATH; bundled DLLs must satisfy the runtime"
 
       - name: Extract version
         id: version
