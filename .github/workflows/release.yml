@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag (e.g. v0.1.0)'
+        description: 'Release tag (e.g. v0.1.1)'
         required: false
 
 permissions:
@@ -63,11 +63,9 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           DEB_DIR="ecdat_${VERSION}_amd64"
           mkdir -p "${DEB_DIR}/DEBIAN"
-          mkdir -p "${DEB_DIR}/usr/bin/resources"
           mkdir -p "${DEB_DIR}/usr/share/ecdat"
           cp build/platform/ecdat "${DEB_DIR}/usr/bin/ecdat"
           chmod +x "${DEB_DIR}/usr/bin/ecdat"
-          cp taxonomy/taxonomy/data/taxonomy.yaml "${DEB_DIR}/usr/bin/resources/taxonomy.yaml"
           cp taxonomy/taxonomy/data/taxonomy.yaml "${DEB_DIR}/usr/share/ecdat/taxonomy.yaml"
           printf 'Package: ecdat\nVersion: %s\nSection: utils\nPriority: optional\nArchitecture: amd64\nDepends: libc6 (>= 2.31), libstdc++6 (>= 12), libssl3 (>= 3.0)\nMaintainer: ECDAT Project Team\nDescription: Enterprise Cryptography Discovery & Assessment Tool\n ECDAT scans source code, certificates, and TLS configurations to\n identify weak cryptographic algorithms, assess risk levels, and\n provide post-quantum cryptography migration guidance.\n' "${VERSION}" > "${DEB_DIR}/DEBIAN/control"
           chmod 755 "${DEB_DIR}/DEBIAN"
@@ -196,25 +194,21 @@ jobs:
           mkdir -p "${STAGING}/bin/resources"
           cp build/platform/Release/ecdat.exe "${STAGING}/bin/ecdat.exe"
           cp taxonomy/taxonomy/data/taxonomy.yaml "${STAGING}/bin/resources/taxonomy.yaml"
-          # Bundle OpenSSL DLLs if found
-          for dll in libssl-3-x64.dll libcrypto-3-x64.dll ssleay32.dll libeay32.dll; do
-            if [ -f "C:/Program Files/OpenSSL/bin/${dll}" ]; then
-              cp "C:/Program Files/OpenSSL/bin/${dll}" "${STAGING}/bin/"
+          # Bundle the exact OpenSSL DLLs the build linked against. The choco
+          # 'openssl' package version varies (libcrypto-3-x64.dll, libcrypto-4-x64.dll,
+          # ...), so copy every libcrypto-*/libssl-* DLL actually installed and keep
+          # their original filenames — never rename between incompatible versions.
+          for dll in "C:/Program Files/OpenSSL/bin/"libcrypto-*.dll "C:/Program Files/OpenSSL/bin/"libssl-*.dll; do
+            if [ -f "${dll}" ]; then
+              cp "${dll}" "${STAGING}/bin/"
             fi
           done
+          if ! ls "${STAGING}/bin/"libcrypto-*.dll "${STAGING}/bin/"libssl-*.dll >/dev/null 2>&1; then
+            echo "ERROR: no OpenSSL DLLs bundled; ecdat.exe may be missing its runtime"
+            ls "C:/Program Files/OpenSSL/bin/" || true
+            exit 1
+          fi
           7z a -tzip "ECDAT-${VERSION}-windows-x86_64.zip" "${STAGING}/"
-
-      - name: Validate zip
-        shell: bash
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          VALIDATION_DIR=$(mktemp -d)
-          cd "${VALIDATION_DIR}"
-          7z x "${{ github.workspace }}/ECDAT-${VERSION}-windows-x86_64.zip"
-          ./ECDAT-${VERSION}-windows-x86_64/bin/ecdat.exe --version
-          test -f ./ECDAT-${VERSION}-windows-x86_64/bin/resources/taxonomy.yaml
-          ./ECDAT-${VERSION}-windows-x86_64/bin/ecdat.exe scan "${{ github.workspace }}"
-          rm -rf "${VALIDATION_DIR}"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -223,10 +217,64 @@ jobs:
           path: ECDAT-*-windows-*.zip
 
   # ---------------------------------------------------------------------------
+  # Windows: validate the packaged ZIP on a CLEAN runner — no OpenSSL install
+  # step and OpenSSL must not be on PATH. This proves ecdat.exe runs using only
+  # the DLLs bundled beside it in the ZIP.
+  # ---------------------------------------------------------------------------
+  validate-windows:
+    needs: build-windows
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows
+          path: dist
+
+      - name: Assert clean environment (no OpenSSL installed or on PATH)
+        shell: bash
+        run: |
+          # The windows-2022 image may ship OpenSSL under C:/Program Files/OpenSSL,
+          # but it is never on PATH; a recent image that leaks it onto PATH would
+          # mask a missing bundled DLL, so that is exactly what we fail on.
+          if printf '%s' "$PATH" | grep -iq openssl; then
+            echo "FAIL: OpenSSL found on PATH:"
+            echo "$PATH"
+            exit 1
+          fi
+          if [ -d "C:/Program Files/OpenSSL" ]; then
+            echo "note: OpenSSL is installed on this runner image but not on PATH"
+          fi
+          echo "OK: no OpenSSL path entry; bundled DLLs must satisfy the runtime"
+
+      - name: Extract version
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(grep "project(ecdat" CMakeLists.txt -A1 | grep VERSION | sed 's/.*VERSION //' | tr -d ')')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Unpack and run real scan
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          cd dist
+          7z x "ECDAT-${VERSION}-windows-x86_64.zip"
+          # Fail loudly if the ZIP is missing its bundled OpenSSL DLLs.
+          ls "ECDAT-${VERSION}-windows-x86_64/bin/"libcrypto-*.dll >/dev/null 2>&1
+          ls "ECDAT-${VERSION}-windows-x86_64/bin/"libssl-*.dll >/dev/null 2>&1
+          cd "ECDAT-${VERSION}-windows-x86_64/bin"
+          ./ecdat.exe --version
+          test -f resources/taxonomy.yaml
+          ./ecdat.exe scan "${{ github.workspace }}"
+
+  # ---------------------------------------------------------------------------
   # Final: collect artifacts, generate checksums, publish release
   # ---------------------------------------------------------------------------
   publish:
-    needs: [build-linux, build-macos, build-windows]
+    needs: [build-linux, build-macos, validate-windows]
     runs-on: ubuntu-24.04
     if: startsWith(github.ref, 'refs/tags/')
     steps:

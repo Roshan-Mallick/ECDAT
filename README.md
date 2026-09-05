@@ -442,7 +442,7 @@ ECDAT is built and validated automatically on native GitHub Actions runners for 
 | macOS | `macos-14` | arm64 / x86_64 | `.tar.gz` |
 | Windows | `windows-2022` | x86_64 | `.zip` |
 
-Each artifact is validated in a clean environment before publication: `ecdat version` runs, `taxonomy.yaml` resolves from the bundled resources, and a real repository scan completes.
+Each artifact is validated in a clean environment before publication: `ecdat version` runs, `taxonomy.yaml` resolves from the bundled resources, and a real repository scan completes. The Windows `.zip` is validated on a separate runner with **no OpenSSL on `PATH`** (any `PATH` entry containing OpenSSL would otherwise mask a missing bundled DLL), proving the bundled `libcrypto-*`/`libssl-*` DLLs alone satisfy the runtime.
 
 ## 11. Installation / Distribution
 
@@ -455,10 +455,10 @@ Select the section for your operating system.
 #### Debian / Ubuntu (`.deb`)
 
 ```bash
-sudo dpkg -i ecdat_0.1.0_amd64.deb
+sudo dpkg -i ecdat_0.1.1_amd64.deb
 ```
 
-This installs the `ecdat` executable to `/usr/bin/ecdat` and taxonomy data to `/usr/share/ecdat/` and `/usr/bin/resources/`.
+This installs the `ecdat` executable to `/usr/bin/ecdat` and taxonomy data to `/usr/share/ecdat/taxonomy.yaml` (it never touches `/usr/bin/resources`, which is owned by Debian/Ubuntu's `resources` package).
 
 Verify and scan:
 
@@ -470,8 +470,8 @@ ecdat scan /path/to/project
 #### Linux Portable Tarball (`tar.gz`)
 
 ```bash
-tar -xzf ECDAT-0.1.0-linux-x86_64.tar.gz
-cd ECDAT-0.1.0
+tar -xzf ECDAT-0.1.1-linux-x86_64.tar.gz
+cd ECDAT-0.1.1
 ./bin/ecdat version
 ./bin/ecdat scan /path/to/project
 ```
@@ -485,10 +485,10 @@ ECDAT is built natively on GitHub Actions `macos-14` runners using the project's
 #### Apple Silicon (arm64)
 
 ```bash
-# 1. Download ECDAT-0.1.0-macos-arm64.tar.gz
+# 1. Download ECDAT-0.1.1-macos-arm64.tar.gz
 # 2. Extract
-tar -xzf ECDAT-0.1.0-macos-arm64.tar.gz
-cd ECDAT-0.1.0
+tar -xzf ECDAT-0.1.1-macos-arm64.tar.gz
+cd ECDAT-0.1.1
 
 # 3. Verify
 ./bin/ecdat version
@@ -505,10 +505,10 @@ The v0.1.0 workflow produces an Apple Silicon artifact only. An Intel
 ### Windows
 
 ```powershell
-# 1. Download ECDAT-0.1.0-windows-x86_64.zip
+# 1. Download ECDAT-0.1.1-windows-x86_64.zip
 # 2. Extract the ZIP
 # 3. Open PowerShell
-cd path\to\extracted\ECDAT-0.1.0\bin
+cd path\to\extracted\ECDAT-0.1.1\bin
 
 # 4. Verify version
 .\ecdat.exe version
@@ -681,7 +681,7 @@ The following walks through a typical ECDAT session from installation to report 
 
 ```bash
 # 1. Install ECDAT (Linux .deb example)
-sudo dpkg -i ecdat_0.1.0_amd64.deb
+sudo dpkg -i ecdat_0.1.1_amd64.deb
 
 # 2. Verify installation
 ecdat version
@@ -958,8 +958,8 @@ cmake --build build -j$(nproc)
 ./build/platform/ecdat export --latest -f pdf -o latest_report.pdf
 
 # Or use the pre-built binary (no build needed)
-tar xzf ECDAT-0.1.0-linux-x86_64.tar.gz
-./ECDAT-0.1.0/bin/ecdat scan /path/to/your/repository
+tar xzf ECDAT-0.1.1-linux-x86_64.tar.gz
+./ECDAT-0.1.1/bin/ecdat scan /path/to/your/repository
 ```
 
 The CLI output includes:

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.21)
 set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 
 project(ecdat
-    VERSION 0.1.0
+    VERSION 0.1.1
     DESCRIPTION "ECDAT - Cryptography Discovery and Analysis Tool"
     LANGUAGES CXX)
 
@@ -134,11 +134,11 @@ install(TARGETS ecdat
 
 # Install application data (taxonomy). The CLI resolves this from the
 # executable location at runtime, so it works from any working directory.
+# NOTE: do NOT install into ${CMAKE_INSTALL_BINDIR}/resources — Ubuntu/Debian
+# already owns /usr/bin/resources (the 'resources' package) and a DEB that
+# creates it conflicts with the package manager.
 install(FILES taxonomy/taxonomy/data/taxonomy.yaml
     DESTINATION "${CMAKE_INSTALL_DATADIR}/ecdat")
-# Also place a copy next to the binary for relocatable/unpacked use.
-install(FILES taxonomy/taxonomy/data/taxonomy.yaml
-    DESTINATION "${CMAKE_INSTALL_BINDIR}/resources")
 
 # ---------------------------------------------------------------------------
 # CPack: standalone tar.gz and Debian package
