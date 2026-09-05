@@ -87,7 +87,7 @@ std::string generate_json(const storage::ScanDetail& detail) {
         {"timestamp", detail.scan.timestamp},
         {"target_path", detail.scan.target_path},
         {"tool_name", "ECDAT"},
-        {"tool_version", "0.1.0"},
+        {"tool_version", ECDAT_VERSION},
         {"platform", "Linux (Native C++20)"}
     };
 

@@ -127,7 +127,7 @@ public:
 
     void draw_footer() {
         draw_line(kMarginLeft, kMarginBottom + 12, kMarginLeft + kPrintWidth, kMarginBottom + 12, 0.8, 0.8, 0.8, 0.5);
-        draw_text(kMarginLeft, kMarginBottom + 2, "ECDAT v0.1.0 • Enterprise Cryptography Discovery & Assessment Tool • Native C++20", "F1", 7, 0.45, 0.45, 0.45);
+        draw_text(kMarginLeft, kMarginBottom + 2, "ECDAT v" ECDAT_VERSION " • Enterprise Cryptography Discovery & Assessment Tool • Native C++20", "F1", 7, 0.45, 0.45, 0.45);
         std::string ptxt = "Page " + std::to_string(page_num_);
         draw_text(kMarginLeft + kPrintWidth - 40, kMarginBottom + 2, ptxt, "F1", 7, 0.45, 0.45, 0.45);
     }

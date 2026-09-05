@@ -33,6 +33,14 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Git-based FetchContent remains available as an explicit opt-in fallback.
 find_package(nlohmann_json CONFIG QUIET)
 find_package(yaml-cpp CONFIG QUIET)
+# Imported targets from find_package are directory-scoped by default: promote
+# them so sibling subdirectories (platform, integration) can link them too.
+if(TARGET nlohmann_json::nlohmann_json)
+    set_property(TARGET nlohmann_json::nlohmann_json PROPERTY IMPORTED_GLOBAL TRUE)
+endif()
+if(TARGET yaml-cpp::yaml-cpp)
+    set_property(TARGET yaml-cpp::yaml-cpp PROPERTY IMPORTED_GLOBAL TRUE)
+endif()
 if(ECDAT_BUILD_TESTS)
     find_package(GTest QUIET)
     if(NOT TARGET GTest::gtest_main)

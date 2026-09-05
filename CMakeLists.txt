@@ -6,6 +6,10 @@ project(ecdat
     DESCRIPTION "ECDAT - Cryptography Discovery and Analysis Tool"
     LANGUAGES CXX)
 
+# Single source of truth for the release version, exposed to subdirectories
+# and compiled into the binaries via the ECDAT_VERSION macro.
+set(ECDAT_VERSION "${PROJECT_VERSION}")
+
 # ---------------------------------------------------------------------------
 # Options
 # ---------------------------------------------------------------------------

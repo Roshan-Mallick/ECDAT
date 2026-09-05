@@ -156,7 +156,7 @@ int CliApp::run(int argc, char** argv) {
                  "risk assessment, and post-quantum readiness."};
 
     app.require_subcommand(0, 1);
-    app.set_version_flag("-V,--version", "0.1.0");
+    app.set_version_flag("-V,--version", ECDAT_VERSION);
 
     CliConfig config;
 
@@ -254,7 +254,7 @@ int CliApp::handle_version() {
     TermColor c(false);
     std::cout << "\n"
               << c.bold("ECDAT — Enterprise Cryptography Discovery & Assessment Tool") << "\n"
-              << c.cyan("Version:") << "  0.1.0\n"
+              << c.cyan("Version:") << "  " << ECDAT_VERSION << "\n"
               << c.cyan("Language:") << " C++20 (Native Static Build)\n"
               << c.cyan("Platform:") << " Linux (x86_64)\n"
               << c.cyan("Engines:")  << " Tree-sitter AST, OpenSSL X.509, SQLite3, NIST PQC (ML-DSA/ML-KEM)\n"

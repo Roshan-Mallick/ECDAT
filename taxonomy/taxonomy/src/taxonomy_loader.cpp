@@ -146,7 +146,18 @@ TaxonomyEntry parse_entry(const YAML::Node& node) {
 } // namespace
 
 std::string normalize_key(std::string_view name) {
-    return to_lower_trimmed(name);
+    const std::string lower = to_lower_trimmed(name);
+    std::string key;
+    key.reserve(lower.size());
+    // Treat hyphens and underscores as separators so that common spellings of
+    // the same algorithm normalize identically (e.g. "SHA-1", "SHA_1", "sha1").
+    for (std::size_t i = 0; i < lower.size(); ++i) {
+        if (lower[i] == '-' || lower[i] == '_') {
+            continue;
+        }
+        key.push_back(lower[i]);
+    }
+    return key;
 }
 
 TaxonomyDB TaxonomyDB::load_from_string(std::string_view yaml_text) {

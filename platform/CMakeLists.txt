@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.21)
 # Member 4 - Platform Engineering & Integration Lead
 # ---------------------------------------------------------------------------
 project(ecdat_member4
-    VERSION 0.1.0
+    VERSION "${ECDAT_VERSION}"
     DESCRIPTION "ECDAT Member 4 - Platform Engineering, Storage, Reporting & CLI"
     LANGUAGES C CXX)
 
@@ -53,6 +53,8 @@ target_link_libraries(ecdat_reporting PUBLIC
     ecdat_storage
     nlohmann_json::nlohmann_json)
 target_compile_features(ecdat_reporting PUBLIC cxx_std_20)
+target_compile_definitions(ecdat_reporting PRIVATE
+    ECDAT_VERSION="${ECDAT_VERSION}")
 
 # ---------------------------------------------------------------------------
 # 4. Member 4 CLI Library (CLI11, spdlog, fmt, UX)
@@ -77,7 +79,8 @@ if(TARGET discovery_lib)
 endif()
 
 target_compile_definitions(ecdat_cli PRIVATE
-    ECDAT_TAXONOMY_PATH="${CMAKE_CURRENT_SOURCE_DIR}/../taxonomy/taxonomy/data/taxonomy.yaml")
+    ECDAT_TAXONOMY_PATH="${CMAKE_CURRENT_SOURCE_DIR}/../taxonomy/taxonomy/data/taxonomy.yaml"
+    ECDAT_VERSION="${ECDAT_VERSION}")
 target_compile_features(ecdat_cli PUBLIC cxx_std_20)
 
 # ---------------------------------------------------------------------------
